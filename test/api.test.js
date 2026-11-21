@@ -8,6 +8,8 @@ import { createApp } from '../src/app.js';
 import { connectDb } from '../src/db.js';
 import { UserStore } from '../src/services/userStore.js';
 import { PracticeStore, scoreSession } from '../src/services/practiceStore.js';
+import { QuestionBank, fingerprint } from '../src/services/questionBank.js';
+import { SubscriptionService, istDate, nextIstMidnight } from '../src/services/subscription.js';
 import {
   FallbackGenerator,
   GeminiQuestionGenerator,
@@ -21,39 +23,87 @@ import { examSubjects } from '../src/data/syllabus.js';
 import { sampleQuestionBank } from '../src/data/sampleQuestions.js';
 
 const MONGO_URI = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017';
+const plans = (free) => ({
+  free: { setsPerDay: 2, maxQuestionsPerSet: 10, maxSaved: 10, freshAi: false, ...free },
+  pro: { questionsPerDay: 300, maxQuestionsPerSet: 30, freshAi: true },
+  trialDays: 7,
+  offers: [{ id: 'pro_yearly', months: 12, priceInr: 499, popular: true }],
+});
 const config = {
   jwtSecret: 'test-secret',
   jwtExpiresIn: '1h',
-  ai: { geminiApiKey: '', geminiModels: [], maxQuestionsPerRequest: 30, generationsPerHour: 50 },
+  ai: { geminiApiKey: '', geminiModels: [], maxQuestionsPerRequest: 30, generationsPerHour: 500 },
   practice: { secondsPerQuestion: 60, correctMark: 1, negativeMark: 0.25 },
+  // Main app: generous limits so the flow tests are not about quotas.
+  plans: plans({ setsPerDay: 1000, maxQuestionsPerSet: 30, maxSaved: 1000 }),
 };
+// Strict app (same DB): real Free limits, saved cap of 1, fake "AI" generator.
+const strictConfig = { ...config, plans: plans({ maxSaved: 1 }) };
+
+/** Stands in for Gemini: unique valid questions, counts how often it is called. */
+class FakeAi {
+  calls = 0;
+  failNext = false;
+  #seq = 0;
+  async generate({ topics, difficulty, count }) {
+    this.calls++;
+    if (this.failNext) {
+      this.failNext = false;
+      throw new AiServiceError('busy', true);
+    }
+    const questions = Array.from({ length: count }, (_, i) => {
+      const n = this.#seq++;
+      return {
+        id: `fake_${n}`,
+        topicId: topics[i % topics.length].id,
+        difficulty,
+        question: `Fake AI question number ${n}?`,
+        options: [`${n}a`, `${n}b`, `${n}c`, `${n}d`],
+        correctIndex: n % 4,
+        explanation: 'Because.',
+        steps: [],
+      };
+    });
+    return { questions, isPreview: false, model: 'fake' };
+  }
+}
 
 let server;
 let base;
+let strictServer;
+let strictBase;
 let db;
+const fakeAi = new FakeAi();
+const services = (cfg, generator) => ({
+  config: cfg,
+  users: new UserStore(db.users),
+  practice: new PracticeStore(db, cfg.practice),
+  questionGenerator: generator,
+  bank: new QuestionBank(db.questionBank, db.sessions),
+  subscription: new SubscriptionService(db, cfg.plans),
+});
+const listen = async (app) => {
+  const s = app.listen(0);
+  await new Promise((r) => s.once('listening', r));
+  return [s, `http://127.0.0.1:${s.address().port}/api/v1`];
+};
 before(async () => {
   const fresh = await connectDb({ uri: MONGO_URI, db: 'examgenius_test' });
   await fresh.db.dropDatabase();
   await fresh.client.close();
   db = await connectDb({ uri: MONGO_URI, db: 'examgenius_test' }); // recreate indexes
-  const app = createApp({
-    config,
-    users: new UserStore(db.users),
-    practice: new PracticeStore(db, config.practice),
-    questionGenerator: new SampleQuestionGenerator(),
-  });
-  server = app.listen(0);
-  await new Promise((r) => server.once('listening', r));
-  base = `http://127.0.0.1:${server.address().port}/api/v1`;
+  [server, base] = await listen(createApp(services(config, new SampleQuestionGenerator())));
+  [strictServer, strictBase] = await listen(createApp(services(strictConfig, fakeAi)));
 });
 after(async () => {
   server.close();
+  strictServer.close();
   await db.db.dropDatabase();
   await db.client.close();
 });
 
-async function call(method, path, body, token) {
-  const res = await fetch(base + path, {
+async function call(method, path, body, token, root = base) {
+  const res = await fetch(root + path, {
     method,
     headers: {
       'content-type': 'application/json',
@@ -338,4 +388,129 @@ test('Gemini: bad key is not retried; busy everywhere falls back to samples', as
   const r = await new FallbackGenerator(busy, new SampleQuestionGenerator(), quiet).generate(request);
   assert.equal(r.isPreview, true);
   assert.ok(r.questions.length > 0);
+});
+
+// ── Question bank + Free / Pro limits (strict app, fake AI) ─────────────────
+
+const strict = (method, path, body, token) => call(method, path, body, token, strictBase);
+const reg = async (mobile) =>
+  (await strict('POST', '/auth/register', { name: `Student ${mobile}`, mobile, password: 'password123', targetExamId: 'ssc_cgl' })).body.token;
+const gen = (token, body = {}) =>
+  strict('POST', '/questions/generate', { examId: 'ssc_cgl', topicIds: ['quant.percentage'], difficulty: 'hard', count: 5, ...body }, token);
+
+test('bank: AI questions are stored once and reused for other students; seen ones are skipped', async () => {
+  const a = await reg('8000000001');
+  const b = await reg('8000000002');
+  const before = fakeAi.calls;
+
+  const first = await gen(a);
+  assert.equal(first.status, 201);
+  assert.equal(first.body.isPreview, false);
+  assert.equal(fakeAi.calls, before + 1); // bank empty → AI
+  assert.equal(await db.questionBank.countDocuments({ topicId: 'quant.percentage', difficulty: 'hard' }), 5);
+
+  const forB = await gen(b);
+  assert.equal(fakeAi.calls, before + 1); // served entirely from the bank — no AI cost
+  assert.deepEqual(
+    forB.body.questions.map((q) => q.question).sort(),
+    first.body.questions.map((q) => q.question).sort(),
+  );
+  assert.equal(forB.body.questions[0].correctIndex, undefined); // still no answer leak
+
+  const againA = await gen(a);
+  assert.equal(fakeAi.calls, before + 2); // A has seen all 5 → new ones generated
+  const seen = new Set(first.body.questions.map((q) => q.question));
+  assert.ok(againA.body.questions.every((q) => !seen.has(q.question)));
+});
+
+test('free: 2 sets per day, then 403 DAILY_SETS with reset time', async () => {
+  const t = await reg('8000000003');
+  assert.equal((await gen(t)).status, 201);
+  assert.equal((await gen(t)).status, 201);
+  const third = await gen(t);
+  assert.equal(third.status, 403);
+  assert.equal(third.body.code, 'DAILY_SETS');
+  assert.equal(third.body.details.max, 2);
+  assert.ok(Date.parse(third.body.details.resetsAt) > Date.now());
+  const status = (await strict('GET', '/subscription', undefined, t)).body;
+  assert.equal(status.tier, 'free');
+  assert.deepEqual(status.usageToday, { sets: 2, questions: 10 });
+});
+
+test('free: set size and fresh AI are Pro-only', async () => {
+  const t = await reg('8000000004');
+  const big = await gen(t, { count: 20 });
+  assert.equal(big.status, 403);
+  assert.equal(big.body.code, 'SET_SIZE');
+  assert.equal(big.body.details.max, 10);
+  const fresh = await gen(t, { fresh: true });
+  assert.equal(fresh.body.code, 'FRESH_AI_PRO');
+  // Rejected requests used no quota.
+  assert.equal((await strict('GET', '/subscription', undefined, t)).body.usageToday.sets, 0);
+});
+
+test('a failed AI call gives the quota back', async () => {
+  const t = await reg('8000000005');
+  fakeAi.failNext = true;
+  const r = await gen(t, { topicIds: ['quant.ratio_proportion'] }); // empty bank topic → AI → fails
+  assert.equal(r.status, 503);
+  assert.equal((await strict('GET', '/subscription', undefined, t)).body.usageToday.sets, 0);
+});
+
+test('trial: once per account, unlocks Pro (bigger sets, fresh AI)', async () => {
+  const t = await reg('8000000006');
+  const s0 = (await strict('GET', '/subscription', undefined, t)).body;
+  assert.equal(s0.trialAvailable, true);
+  assert.equal(s0.limits.maxQuestionsPerSet, 10);
+
+  const s1 = (await strict('POST', '/subscription/trial', undefined, t)).body;
+  assert.equal(s1.tier, 'pro');
+  assert.equal(s1.source, 'trial');
+  assert.equal(s1.trialAvailable, false);
+  const days = (Date.parse(s1.expiresAt) - Date.now()) / 86_400_000;
+  assert.ok(days > 6.9 && days <= 7);
+  assert.equal((await strict('POST', '/subscription/trial', undefined, t)).status, 409);
+
+  assert.equal((await gen(t, { count: 20 })).status, 201);
+  const callsBefore = fakeAi.calls;
+  const fresh = await gen(t, { fresh: true }); // bank has these, but fresh forces AI
+  assert.equal(fresh.status, 201);
+  assert.equal(fakeAi.calls, callsBefore + 1);
+  for (let i = 0; i < 3; i++) assert.equal((await gen(t)).status, 201); // no 2-set cap
+});
+
+test('free: saved practice cap; re-saving the same result is still allowed', async () => {
+  const t = await reg('8000000007');
+  const s1 = (await gen(t)).body;
+  const s2 = (await gen(t)).body;
+  const r1 = (await strict('POST', `/practice/${s1.sessionId}/submit`, { answers: {}, timeTakenSeconds: 1 }, t)).body;
+  const r2 = (await strict('POST', `/practice/${s2.sessionId}/submit`, { answers: {}, timeTakenSeconds: 1 }, t)).body;
+  assert.equal((await strict('POST', '/practice/saved', { resultId: r1.resultId }, t)).status, 201);
+  assert.equal((await strict('POST', '/practice/saved', { resultId: r1.resultId }, t)).status, 201);
+  const blocked = await strict('POST', '/practice/saved', { resultId: r2.resultId }, t);
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.body.code, 'SAVED_LIMIT');
+});
+
+test('grantPro extends from the current expiry; expired Pro falls back to Free', async () => {
+  let now = new Date('2026-11-21T10:00:00Z');
+  const subs = new SubscriptionService(db, strictConfig.plans, () => now);
+  const u = await db.users.findOne({ mobile: '8000000001' });
+  await subs.grantPro(u._id, 30);
+  const once = await db.users.findOne({ _id: u._id });
+  await subs.grantPro(u._id, 30);
+  const twice = await db.users.findOne({ _id: u._id });
+  assert.equal(twice.plan.expiresAt - once.plan.expiresAt, 30 * 86_400_000);
+  assert.equal(subs.isPro(twice), true);
+  now = new Date(twice.plan.expiresAt.getTime() + 1000);
+  assert.equal(subs.isPro(twice), false);
+});
+
+test('IST day boundaries and fingerprints', () => {
+  assert.equal(istDate(new Date('2026-11-21T18:29:00Z')), '2026-11-21'); // 23:59 IST
+  assert.equal(istDate(new Date('2026-11-21T18:31:00Z')), '2026-11-22'); // 00:01 IST
+  assert.equal(nextIstMidnight(new Date('2026-11-21T10:00:00Z')).toISOString(), '2026-11-21T18:30:00.000Z');
+  const q = { question: '  What is 2+2? ', options: ['4', '3', '5', '6'] };
+  assert.equal(fingerprint('en', q), fingerprint('en', { question: 'what is 2+2?', options: ['6', '5', '4', '3'] }));
+  assert.notEqual(fingerprint('en', q), fingerprint('hi', q));
 });

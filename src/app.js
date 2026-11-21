@@ -12,6 +12,7 @@ import { findExam, getSyllabus, listCategories, topicIndex } from './services/ex
 import { toPublicUser } from './services/userStore.js';
 import { toPublicResult, toPublicSaved, toPublicSession } from './services/practiceStore.js';
 import { AiServiceError, GenerationError } from './services/questionGenerator.js';
+import { LimitError } from './services/subscription.js';
 
 const mobile = z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number');
 const identifier = z
@@ -44,7 +45,15 @@ const LoginBody = z
  * database and a fake generator. Express 5 forwards rejected promises from
  * async handlers to the error handler.
  */
-export function createApp({ config, users, practice, questionGenerator, logRequests = false }) {
+export function createApp({
+  config,
+  users,
+  practice,
+  questionGenerator,
+  bank,
+  subscription,
+  logRequests = false,
+}) {
   const app = express();
   app.use(helmet());
   app.use(cors());
@@ -180,6 +189,8 @@ export function createApp({ config, users, practice, questionGenerator, logReque
     count: z.number().int().min(1).max(config.ai.maxQuestionsPerRequest),
     level: z.literal('exam').optional(),
     language: z.enum(['en', 'hi']).optional(),
+    // Pro: skip the bank and generate brand-new questions with AI.
+    fresh: z.boolean().optional(),
   });
 
   const generateLimiter = rateLimit({
@@ -201,13 +212,57 @@ export function createApp({ config, users, practice, questionGenerator, logReque
       return { id, name: entry.topic.name, subjectName: entry.subject.name };
     });
 
-    const generated = await questionGenerator.generate({
-      exam,
-      topics,
-      difficulty: body.difficulty,
-      count: body.count,
-      language: body.language ?? 'en',
-    });
+    const language = body.language ?? 'en';
+    const fresh = Boolean(body.fresh);
+
+    // Plan check + atomic reservation of today's quota (Free: sets/day; Pro: fair use).
+    const reservation = await subscription.reserveGeneration(req.user, { count: body.count, fresh });
+
+    let questions;
+    let isPreview = false;
+    let aiCount = 0;
+    try {
+      // 1) Question bank first (free to serve), skipping what this student has seen.
+      const fromBank = fresh
+        ? []
+        : await bank.pick({
+            topicIds: topics.map((t) => t.id),
+            difficulty: body.difficulty,
+            language,
+            count: body.count,
+            excludeIds: await bank.seenBy(req.user._id),
+          });
+
+      // 2) AI only for the shortfall; new AI questions go into the bank.
+      let generatedQs = [];
+      const missing = body.count - fromBank.length;
+      if (missing > 0) {
+        const generated = await questionGenerator.generate({
+          exam,
+          topics,
+          difficulty: body.difficulty,
+          count: missing,
+          language,
+        });
+        isPreview = generated.isPreview && generated.questions.length > 0;
+        generatedQs = generated.isPreview
+          ? generated.questions
+          : await bank.add(generated.questions, { examId: exam.id, language, model: generated.model });
+        aiCount = generated.isPreview ? 0 : generatedQs.length;
+      }
+      questions = [...fromBank, ...generatedQs];
+    } catch (err) {
+      await subscription.release(reservation);
+      throw err;
+    }
+    if (questions.length === 0) {
+      await subscription.release(reservation);
+    } else if (questions.length < body.count) {
+      await subscription.release(reservation, {
+        unusedQuestions: body.count - questions.length,
+        refundSet: false,
+      });
+    }
 
     const names = new Map(topics.map((t) => [t.id, t.name]));
     const session = await practice.createSession({
@@ -217,8 +272,8 @@ export function createApp({ config, users, practice, questionGenerator, logReque
       topics: topics.map((t) => t.name),
       difficulty: body.difficulty,
       requestedCount: body.count,
-      isPreview: generated.isPreview,
-      questions: generated.questions.map((q) => ({
+      isPreview,
+      questions: questions.map((q) => ({
         ...q,
         topicName: names.get(q.topicId) ?? index.get(q.topicId)?.topic.name ?? q.topicId,
       })),
@@ -226,7 +281,7 @@ export function createApp({ config, users, practice, questionGenerator, logReque
 
     await users.incrementStats(req.user._id, {
       generations: 1,
-      questionsGenerated: session.questions.length,
+      questionsGenerated: aiCount,
     });
     res.status(201).json(toPublicSession(session));
   });
@@ -293,6 +348,10 @@ export function createApp({ config, users, practice, questionGenerator, logReque
     const { resultId } = z.object({ resultId: z.string() }).parse(req.body);
     const result = await practice.findResult(req.user._id, resultId);
     if (!result) throw httpError(404, 'Result not found');
+    // Re-saving the same result is always allowed (idempotent); new saves count.
+    if (!(await practice.isSaved(req.user._id, resultId))) {
+      await subscription.assertCanSave(req.user, await practice.countSaved(req.user._id));
+    }
     const saved = await practice.save(req.user._id, result);
     res.status(201).json(toPublicSaved({ saved, result }));
   });
@@ -303,11 +362,26 @@ export function createApp({ config, users, practice, questionGenerator, logReque
     res.status(204).end();
   });
 
+  // ── Subscription (Free / Pro) ─────────────────────────────────────────────
+  api.get('/subscription', requireAuth, async (req, res) => {
+    res.json(await subscription.status(req.user));
+  });
+
+  api.post('/subscription/trial', requireAuth, async (req, res) => {
+    const user = await subscription.startTrial(req.user);
+    if (!user) throw httpError(409, 'Free trial already used');
+    res.json(await subscription.status(user));
+  });
+
   // ── Errors ────────────────────────────────────────────────────────────────
   app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
+    if (err instanceof LimitError) {
+      // `code` lets the app show the right upgrade prompt.
+      return res.status(403).json({ error: err.message, code: err.code, details: err.details });
+    }
     if (err instanceof z.ZodError) {
       return res.status(400).json({ error: err.issues[0]?.message ?? 'Invalid request' });
     }

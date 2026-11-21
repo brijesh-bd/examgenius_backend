@@ -6,7 +6,8 @@
     "test": "node --test",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "try-generate": "node scripts/try-generate.js"
+    "try-generate": "node scripts/try-generate.js",
+    "grant-pro": "node scripts/grant-pro.js"
   },
   "type": "module",
   "dependencies": {

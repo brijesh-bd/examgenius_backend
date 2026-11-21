@@ -101,6 +101,14 @@ export class PracticeStore {
     return saved.filter((s) => byId.has(s.resultId)).map((s) => ({ saved: s, result: byId.get(s.resultId) }));
   }
 
+  async isSaved(userId, resultId) {
+    return (await this.saved.countDocuments({ userId, resultId }, { limit: 1 })) > 0;
+  }
+
+  countSaved(userId) {
+    return this.saved.countDocuments({ userId });
+  }
+
   async deleteSaved(userId, id) {
     const { deletedCount } = await this.saved.deleteOne({ _id: id, userId });
     return deletedCount > 0;

@@ -46,6 +46,28 @@ export const config = {
     correctMark: 1,
     negativeMark: 0.25,
   },
+  // Free vs Pro. Limits are enforced on the server; the app only displays them.
+  plans: {
+    free: {
+      setsPerDay: Number(env.FREE_SETS_PER_DAY ?? 2),
+      maxQuestionsPerSet: Number(env.FREE_MAX_QUESTIONS_PER_SET ?? 10),
+      maxSaved: Number(env.FREE_MAX_SAVED ?? 10),
+      freshAi: false,
+    },
+    pro: {
+      // Fair use: generous, but caps a runaway AI bill.
+      questionsPerDay: Number(env.PRO_QUESTIONS_PER_DAY ?? 300),
+      maxQuestionsPerSet: Number(env.PRO_MAX_QUESTIONS_PER_SET ?? 30),
+      freshAi: true,
+    },
+    trialDays: Number(env.TRIAL_DAYS ?? 7),
+    // Shown on the Plans screen (prices include GST). Payment is not wired yet.
+    offers: [
+      { id: "pro_monthly", months: 1, priceInr: 99 },
+      { id: "pro_quarterly", months: 3, priceInr: 249 },
+      { id: "pro_yearly", months: 12, priceInr: 499, popular: true },
+    ],
+  },
 };
 
 /** Gemini live mode is on when a key is configured. */

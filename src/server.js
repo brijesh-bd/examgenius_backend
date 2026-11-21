@@ -4,6 +4,8 @@ import { connectDb } from './db.js';
 import { UserStore } from './services/userStore.js';
 import { PracticeStore } from './services/practiceStore.js';
 import { createQuestionGenerator } from './services/questionGenerator.js';
+import { QuestionBank } from './services/questionBank.js';
+import { SubscriptionService } from './services/subscription.js';
 
 let db;
 try {
@@ -19,6 +21,8 @@ const app = createApp({
   users: new UserStore(db.users),
   practice: new PracticeStore(db, config.practice),
   questionGenerator: createQuestionGenerator(config.ai),
+  bank: new QuestionBank(db.questionBank, db.sessions),
+  subscription: new SubscriptionService(db, config.plans),
   logRequests: true,
 });
 
