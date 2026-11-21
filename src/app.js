@@ -44,11 +44,20 @@ const LoginBody = z
  * database and a fake generator. Express 5 forwards rejected promises from
  * async handlers to the error handler.
  */
-export function createApp({ config, users, practice, questionGenerator }) {
+export function createApp({ config, users, practice, questionGenerator, logRequests = false }) {
   const app = express();
   app.use(helmet());
   app.use(cors());
   app.use(express.json({ limit: '200kb' }));
+
+  // One line per request: "POST /api/v1/auth/login 200 85ms" (server only, not tests).
+  if (logRequests) {
+    app.use((req, res, next) => {
+      const t = Date.now();
+      res.on("finish", () => console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - t}ms`));
+      next();
+    });
+  }
 
   const api = express.Router();
   app.use('/api/v1', api);

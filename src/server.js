@@ -19,6 +19,7 @@ const app = createApp({
   users: new UserStore(db.users),
   practice: new PracticeStore(db, config.practice),
   questionGenerator: createQuestionGenerator(config.ai),
+  logRequests: true,
 });
 
 // 0.0.0.0 so a phone on the same Wi-Fi (or the Android emulator) can reach it.
