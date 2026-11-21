@@ -514,3 +514,12 @@ test('IST day boundaries and fingerprints', () => {
   assert.equal(fingerprint('en', q), fingerprint('en', { question: 'what is 2+2?', options: ['6', '5', '4', '3'] }));
   assert.notEqual(fingerprint('en', q), fingerprint('hi', q));
 });
+
+test('topic stats aggregate across results', async () => {
+  const r = await call('GET', '/practice/topic-stats', undefined, token);
+  assert.equal(r.status, 200);
+  const tw = r.body.topics.find((t) => t.topicId === 'quant.time_work');
+  assert.ok(tw);
+  assert.ok(tw.total >= tw.correct && tw.total > 0);
+  assert.equal(tw.topicName, 'Time & Work');
+});

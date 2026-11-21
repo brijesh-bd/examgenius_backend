@@ -339,6 +339,10 @@ export function createApp({
     res.status(201).json(toPublicSession(session));
   });
 
+  api.get('/practice/topic-stats', requireAuth, async (req, res) => {
+    res.json({ topics: await practice.topicStats(req.user._id) });
+  });
+
   api.get('/practice/saved', requireAuth, async (req, res) => {
     const items = await practice.listSaved(req.user._id);
     res.json({ items: items.map(toPublicSaved) });

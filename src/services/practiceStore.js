@@ -74,6 +74,25 @@ export class PracticeStore {
     return result;
   }
 
+  /** Per-topic totals across all of a student's results (weak-topic practice). */
+  topicStats(userId) {
+    return this.results
+      .aggregate([
+        { $match: { userId } },
+        { $unwind: "$topicStats" },
+        {
+          $group: {
+            _id: "$topicStats.topicId",
+            topicName: { $last: "$topicStats.topicName" },
+            total: { $sum: "$topicStats.total" },
+            correct: { $sum: "$topicStats.correct" },
+          },
+        },
+        { $project: { _id: 0, topicId: "$_id", topicName: 1, total: 1, correct: 1 } },
+      ])
+      .toArray();
+  }
+
   recentResults(userId, limit = 50) {
     return this.results.find({ userId }).sort({ completedAt: -1 }).limit(limit).toArray();
   }
