@@ -6,6 +6,13 @@ import { PracticeStore } from './services/practiceStore.js';
 import { createQuestionGenerator } from './services/questionGenerator.js';
 import { QuestionBank } from './services/questionBank.js';
 import { SubscriptionService } from './services/subscription.js';
+import { LibraryStore } from './services/libraryStore.js';
+import { NotesStore } from './services/notesStore.js';
+import { LearningProgressStore } from './services/learningProgressStore.js';
+import { SectionCache } from './services/sectionCache.js';
+import { NotesQuota } from './services/notesQuota.js';
+import { createSectionGenerator } from './services/sectionGenerator.js';
+import { createNotesGenerator } from './services/notesGenerator.js';
 
 let db;
 try {
@@ -23,6 +30,13 @@ const app = createApp({
   questionGenerator: createQuestionGenerator(config.ai),
   bank: new QuestionBank(db.questionBank, db.sessions),
   subscription: new SubscriptionService(db, config.plans),
+  library: new LibraryStore(db),
+  notes: new NotesStore(db),
+  progress: new LearningProgressStore(db),
+  sectionCache: new SectionCache(db),
+  notesQuota: new NotesQuota(db, { perHour: config.ai.notesPerHour }),
+  sectionGenerator: createSectionGenerator(config.ai),
+  notesGenerator: createNotesGenerator(config.ai),
   logRequests: true,
 });
 
@@ -35,6 +49,7 @@ const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`ExamGenius API on http://localhost:${config.port}/api/v1`);
   console.log(`MongoDB: ${config.mongo.uri}/${config.mongo.db}`);
   console.log(`AI: ${mode}`);
+  if (aiMode() === 'live') console.log(`AI Study Notes models: ${config.ai.notesModels.join(' → ')}`);
 });
 
 const shutdown = async () => {

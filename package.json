@@ -7,7 +7,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "try-generate": "node scripts/try-generate.js",
-    "grant-pro": "node scripts/grant-pro.js"
+    "grant-pro": "node scripts/grant-pro.js",
+    "migrate-library": "node scripts/migrate-library.js",
+    "notes-cache": "node scripts/notes-cache.js"
   },
   "type": "module",
   "dependencies": {

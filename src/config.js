@@ -33,12 +33,30 @@ export const config = {
       ...list(env.GEMINI_MODEL, 'gemini-3.8-flash'),
       ...list(env.GEMINI_FALLBACK_MODELS, 'gemini-3.5-flash-lite,gemini-3.5-flash,gemini-flash-lite-latest'),
     ].filter((m, i, all) => all.indexOf(m) === i),
+    // AI Study Notes: own model order. Primary first; Flash-Lite is never
+    // used for notes (too shallow) and is removed with a warning.
+    // Primary only by default: gemini-3.5-flash stays OFF as a fallback until
+    // its availability and note quality are verified and approved. Enable it
+    // explicitly with GEMINI_NOTES_MODELS=gemini-3.8-flash,gemini-3.5-flash.
+    notesModels: list(env.GEMINI_NOTES_MODELS, list(env.GEMINI_MODEL, 'gemini-3.8-flash')[0])
+      .filter((m, i, all) => all.indexOf(m) === i)
+      .filter((m) => {
+        if (!/lite/i.test(m)) return true;
+        console.warn(`GEMINI_NOTES_MODELS: ${m} ignored — Flash-Lite is not used for study notes`);
+        return false;
+      }),
     // Per-model request timeout.
     timeoutMs: Number(env.AI_TIMEOUT_MS ?? 40_000),
     // When every model fails, serve labelled sample questions instead of an error.
     fallbackToSamples: (env.AI_FALLBACK_TO_SAMPLES ?? 'true') === 'true',
     maxQuestionsPerRequest: Number(env.AI_MAX_QUESTIONS ?? 30),
     generationsPerHour: Number(env.AI_GENERATIONS_PER_HOUR ?? 20),
+    // AI Study Notes have their own hourly limit (separate from questions).
+    notesPerHour: Number(env.AI_NOTES_PER_HOUR ?? 20),
+  },
+  notes: {
+    // Show curated outlines that are still drafts (for review in dev only).
+    showDraftOutlines: env.NOTES_SHOW_DRAFT_OUTLINES === 'true',
   },
   practice: {
     // Countdown given to the student per question.
@@ -51,7 +69,9 @@ export const config = {
     free: {
       setsPerDay: Number(env.FREE_SETS_PER_DAY ?? 2),
       maxQuestionsPerSet: Number(env.FREE_MAX_QUESTIONS_PER_SET ?? 10),
-      maxSaved: Number(env.FREE_MAX_SAVED ?? 10),
+      // Every generated set is saved to the Library automatically, so saved
+      // sets are unlimited by default. Set FREE_MAX_SAVED to cap them again.
+      maxSaved: env.FREE_MAX_SAVED ? Number(env.FREE_MAX_SAVED) : null,
       freshAi: false,
     },
     pro: {

@@ -17,7 +17,7 @@ export class PracticeStore {
 
   // ── Sessions ──────────────────────────────────────────────────────────────
 
-  async createSession({ userId, exam, subjects, topics, difficulty, requestedCount, questions, isPreview, retryOf = null }) {
+  async createSession({ userId, exam, subjects, topics, difficulty, requestedCount, questions, isPreview, retryOf = null, setId = null }) {
     const session = {
       _id: crypto.randomUUID(),
       userId,
@@ -29,6 +29,7 @@ export class PracticeStore {
       requestedCount,
       isPreview,
       retryOf,
+      setId, // Library set this test belongs to (null for partial retries)
       timeLimitSeconds: questions.length ? questions.length * this.cfg.secondsPerQuestion : null,
       questions,
       createdAt: new Date(),
@@ -200,6 +201,7 @@ export function scoreSession(session, answers, { correctMark = 1, negativeMark =
 export function toPublicSession(s) {
   return {
     sessionId: s._id,
+    setId: s.setId ?? null,
     examId: s.examId,
     examName: s.examName,
     subjects: s.subjects,
