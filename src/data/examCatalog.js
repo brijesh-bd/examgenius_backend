@@ -1,0 +1,37 @@
+// Exam catalog served at GET /api/v1/exams.
+export const examCatalog = [
+  {
+    'id': 'railway',
+    'name': 'Railway',
+    'exams': [
+      {'id': 'rrb_ntpc', 'name': 'RRB NTPC', 'categoryId': 'railway'},
+      {'id': 'rrb_group_d', 'name': 'RRB Group D', 'categoryId': 'railway'},
+      {'id': 'rrb_alp', 'name': 'RRB ALP', 'categoryId': 'railway'},
+      {'id': 'rrb_je', 'name': 'RRB JE', 'categoryId': 'railway'},
+    ],
+  },
+  {
+    'id': 'ssc',
+    'name': 'SSC',
+    'exams': [
+      {'id': 'ssc_cgl', 'name': 'SSC CGL', 'categoryId': 'ssc'},
+      {'id': 'ssc_chsl', 'name': 'SSC CHSL', 'categoryId': 'ssc'},
+      {'id': 'ssc_mts', 'name': 'SSC MTS', 'categoryId': 'ssc'},
+      {'id': 'ssc_gd', 'name': 'SSC GD', 'categoryId': 'ssc'},
+      {'id': 'ssc_cpo', 'name': 'SSC CPO', 'categoryId': 'ssc'},
+    ],
+  },
+  {
+    'id': 'banking',
+    'name': 'Banking',
+    'exams': [
+      {'id': 'ibps_po', 'name': 'IBPS PO', 'categoryId': 'banking'},
+      {'id': 'ibps_clerk', 'name': 'IBPS Clerk', 'categoryId': 'banking'},
+      {'id': 'ibps_rrb_po', 'name': 'IBPS RRB PO', 'categoryId': 'banking'},
+      {'id': 'ibps_rrb_clerk', 'name': 'IBPS RRB Clerk', 'categoryId': 'banking'},
+      {'id': 'ibps_so_it', 'name': 'IBPS SO IT Officer', 'categoryId': 'banking'},
+      {'id': 'sbi_po', 'name': 'SBI PO', 'categoryId': 'banking'},
+      {'id': 'sbi_clerk', 'name': 'SBI Clerk', 'categoryId': 'banking'},
+    ],
+  },
+];

@@ -60,6 +60,36 @@ export class QuestionBank {
   }
 
   /**
+   * Stored questions matching the filters: `total`, and `unseen` (not in
+   * this student's recent tests). Used to check a bank set BEFORE creating it.
+   */
+  async availability({ topicIds, difficulty, language, seenIds = [] }) {
+    const match = { difficulty, language, source: 'ai', topicId: { $in: topicIds } };
+    const [total, seen] = await Promise.all([
+      this.bank.countDocuments(match),
+      seenIds.length ? this.bank.countDocuments({ ...match, _id: { $in: seenIds } }) : 0,
+    ]);
+    return { total, unseen: total - seen };
+  }
+
+  /**
+   * A full bank set: unseen questions first; when those run out, questions
+   * the student has met before (never more than the bank holds).
+   */
+  async pickSet({ topicIds, difficulty, language, count, seenIds = [] }) {
+    const fresh = await this.pick({ topicIds, difficulty, language, count, excludeIds: seenIds });
+    if (fresh.length >= count) return fresh;
+    const again = await this.pick({
+      topicIds,
+      difficulty,
+      language,
+      count: count - fresh.length,
+      excludeIds: fresh.map((q) => q.bankId),
+    });
+    return [...fresh, ...again];
+  }
+
+  /**
    * Stores AI questions (skipping duplicates) and returns them with their
    * `bankId`, ready to put into a session.
    */

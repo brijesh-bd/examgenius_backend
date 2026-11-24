@@ -1,0 +1,197 @@
+// Coverage manifests — Professional Knowledge (IT) › DBMS (IBPS SO IT Officer).
+//
+// STATUS: DRAFT, written for review against standard DBMS coverage
+// (Korth/Navathe-level topics as tested in IBPS SO IT Professional
+// Knowledge). Check against the latest IBPS SO notification before
+// approving. No trusted source is attached yet ("unverified").
+
+const c = (id, name, aliases = [], level = 'core') => ({ id, name, aliases, level });
+const base = { version: 1, status: 'draft', sources: [] };
+const N = 'professional_it.dbms.normalization#dbms_normalization';
+const S = 'professional_it.dbms.sql#dbms_sql';
+const T = 'professional_it.dbms.transactions#dbms_transactions';
+
+export default {
+  // ── Normalization ────────────────────────────────────────────────────────
+  [`${N}.fd`]: {
+    ...base,
+    objectives: ['Define functional dependencies and compute closures', 'Explain update, insert and delete anomalies'],
+    concepts: [
+      c('fd', 'functional dependency', ['functional dependencies']),
+      c('trivial', 'trivial', ['non-trivial']),
+      c('armstrong', 'Armstrong', ["Armstrong's axioms", 'reflexivity', 'augmentation', 'transitivity']),
+      c('closure', 'closure', ['attribute closure']),
+      c('candidate_key', 'candidate key'),
+      c('insert_anomaly', 'insertion anomaly', ['insert anomaly']),
+      c('update_anomaly', 'update anomaly', ['modification anomaly']),
+      c('delete_anomaly', 'deletion anomaly', ['delete anomaly']),
+      c('minimal_cover', 'minimal cover', ['canonical cover'], 'detail'),
+    ],
+    blocks: ['explanation', 'definitions', 'examples', 'steps', 'table', 'keyFacts', 'mistakes', 'revision', 'mcqs'],
+    comparisons: [],
+    facts: [],
+    examples: ['Compute the closure of an attribute set and find a candidate key'],
+    mcqs: { min: 6 },
+  },
+  [`${N}.normal_forms`]: {
+    ...base,
+    objectives: ['Apply 1NF, 2NF, 3NF and BCNF step by step to a relation'],
+    concepts: [
+      c('1nf', '1NF', ['First Normal Form', 'atomic']),
+      c('2nf', '2NF', ['Second Normal Form', 'partial dependency']),
+      c('3nf', '3NF', ['Third Normal Form', 'transitive dependency']),
+      c('bcnf', 'BCNF', ['Boyce-Codd', 'Boyce Codd']),
+      c('prime_attribute', 'prime attribute', ['non-prime attribute']),
+      c('superkey', 'super key', ['superkey']),
+      c('lossless', 'lossless', ['lossless join', 'lossless decomposition'], 'detail'),
+      c('dependency_preservation', 'dependency preserving', ['dependency preservation'], 'detail'),
+    ],
+    blocks: ['explanation', 'definitions', 'examples', 'steps', 'table', 'keyFacts', 'mistakes', 'revision', 'mcqs'],
+    comparisons: ['1NF vs 2NF vs 3NF vs BCNF (condition, removes, example)'],
+    facts: [],
+    examples: ['Normalise one un-normalised table to BCNF, showing each step'],
+    mcqs: { min: 8 },
+  },
+  [`${N}.higher`]: {
+    ...base,
+    objectives: ['Explain 4NF, 5NF and when denormalisation is used'],
+    concepts: [
+      c('4nf', '4NF', ['Fourth Normal Form']),
+      c('mvd', 'multivalued dependency', ['multi-valued dependency']),
+      c('5nf', '5NF', ['Fifth Normal Form', 'join dependency']),
+      c('denormalization', 'denormalization', ['denormalisation']),
+    ],
+    blocks: ['explanation', 'examples', 'table', 'keyFacts', 'revision', 'mcqs'],
+    comparisons: ['Normalization vs denormalization'],
+    facts: [],
+    examples: [],
+    mcqs: { min: 4 },
+  },
+  // ── SQL ──────────────────────────────────────────────────────────────────
+  [`${S}.ddl_dml`]: {
+    ...base,
+    objectives: ['Classify SQL commands into DDL, DML, DCL and TCL with syntax'],
+    concepts: [
+      c('ddl', 'DDL', ['Data Definition Language', 'CREATE', 'ALTER', 'DROP', 'TRUNCATE']),
+      c('dml', 'DML', ['Data Manipulation Language', 'INSERT', 'UPDATE', 'DELETE']),
+      c('dcl', 'DCL', ['Data Control Language', 'GRANT', 'REVOKE']),
+      c('tcl', 'TCL', ['Transaction Control Language', 'COMMIT', 'ROLLBACK', 'SAVEPOINT']),
+      c('delete_truncate_drop', 'TRUNCATE', ['DELETE vs TRUNCATE']),
+      c('constraints', 'constraints', ['PRIMARY KEY', 'FOREIGN KEY', 'NOT NULL', 'UNIQUE', 'CHECK'], 'detail'),
+    ],
+    blocks: ['explanation', 'code', 'table', 'keyFacts', 'mistakes', 'revision', 'mcqs'],
+    comparisons: ['DELETE vs TRUNCATE vs DROP'],
+    facts: [],
+    examples: ['CREATE TABLE with constraints; INSERT/UPDATE/DELETE with results'],
+    mcqs: { min: 6 },
+  },
+  [`${S}.queries`]: {
+    ...base,
+    objectives: ['Write SELECT queries with joins, grouping and subqueries and predict their output'],
+    concepts: [
+      c('select', 'SELECT'),
+      c('where', 'WHERE'),
+      c('inner_join', 'INNER JOIN', ['inner join']),
+      c('outer_join', 'LEFT JOIN', ['LEFT OUTER JOIN', 'RIGHT JOIN', 'FULL OUTER JOIN', 'outer join']),
+      c('group_by', 'GROUP BY'),
+      c('having', 'HAVING'),
+      c('aggregates', 'COUNT', ['SUM', 'AVG', 'MAX', 'MIN', 'aggregate']),
+      c('order_by', 'ORDER BY'),
+      c('subquery', 'subquery', ['nested query', 'sub-query']),
+      c('correlated', 'correlated subquery', ['correlated'], 'detail'),
+      c('set_ops', 'UNION', ['INTERSECT', 'EXCEPT', 'MINUS'], 'detail'),
+      c('null', 'NULL', ['IS NULL'], 'detail'),
+    ],
+    blocks: ['explanation', 'code', 'examples', 'table', 'keyFacts', 'mistakes', 'revision', 'mcqs'],
+    comparisons: ['WHERE vs HAVING', 'Types of joins with result rows'],
+    facts: [],
+    examples: ['Sample tables with each query and its expected output'],
+    mcqs: { min: 8 },
+  },
+  [`${S}.views_triggers`]: {
+    ...base,
+    objectives: ['Explain views, indexes, triggers and stored procedures with examples'],
+    concepts: [
+      c('view', 'view', ['CREATE VIEW']),
+      c('materialized', 'materialized view', [], 'detail'),
+      c('index', 'index', ['CREATE INDEX']),
+      c('trigger', 'trigger', ['CREATE TRIGGER']),
+      c('procedure', 'stored procedure', ['procedure']),
+      c('function', 'function', [], 'detail'),
+    ],
+    blocks: ['explanation', 'code', 'table', 'keyFacts', 'revision', 'mcqs'],
+    comparisons: ['View vs table', 'Stored procedure vs function vs trigger'],
+    facts: [],
+    examples: [],
+    mcqs: { min: 6 },
+  },
+  // ── Transactions ─────────────────────────────────────────────────────────
+  [`${T}.acid`]: {
+    ...base,
+    objectives: ['Define a transaction, its states and the ACID properties'],
+    concepts: [
+      c('transaction', 'transaction'),
+      c('atomicity', 'Atomicity'),
+      c('consistency', 'Consistency'),
+      c('isolation', 'Isolation'),
+      c('durability', 'Durability'),
+      c('states', 'transaction states', ['partially committed', 'aborted'], 'detail'),
+    ],
+    blocks: ['explanation', 'definitions', 'diagram', 'examples', 'keyFacts', 'revision', 'mcqs'],
+    comparisons: [],
+    facts: [],
+    examples: ['Bank transfer showing each ACID property'],
+    mcqs: { min: 6 },
+  },
+  [`${T}.schedules`]: {
+    ...base,
+    objectives: ['Test schedules for conflict and view serializability and recoverability'],
+    concepts: [
+      c('schedule', 'schedule', ['serial schedule']),
+      c('conflict_serializable', 'conflict serializable', ['conflict serializability']),
+      c('precedence_graph', 'precedence graph', ['serialization graph']),
+      c('view_serializable', 'view serializable', ['view serializability'], 'detail'),
+      c('recoverable', 'recoverable schedule', ['recoverable']),
+      c('cascadeless', 'cascadeless', ['cascading rollback'], 'detail'),
+    ],
+    blocks: ['explanation', 'examples', 'steps', 'diagram', 'keyFacts', 'mistakes', 'revision', 'mcqs'],
+    comparisons: ['Conflict vs view serializability'],
+    facts: [],
+    examples: ['Draw a precedence graph for a schedule and decide serializability'],
+    mcqs: { min: 6 },
+  },
+  [`${T}.concurrency`]: {
+    ...base,
+    objectives: ['Explain lock-based concurrency control, 2PL and deadlock handling'],
+    concepts: [
+      c('locks', 'shared lock', ['exclusive lock', 'shared and exclusive']),
+      c('two_pl', 'two-phase locking', ['2PL', 'two phase locking']),
+      c('strict_2pl', 'strict two-phase locking', ['strict 2PL'], 'detail'),
+      c('deadlock', 'deadlock'),
+      c('wait_die', 'wait-die', ['wound-wait'], 'detail'),
+      c('timestamp', 'timestamp ordering', ['timestamp'], 'detail'),
+      c('problems', 'lost update', ['dirty read', 'unrepeatable read']),
+    ],
+    blocks: ['explanation', 'examples', 'table', 'keyFacts', 'revision', 'mcqs'],
+    comparisons: ['Wait-die vs wound-wait'],
+    facts: [],
+    examples: [],
+    mcqs: { min: 6 },
+  },
+  [`${T}.recovery`]: {
+    ...base,
+    objectives: ['Explain log-based recovery, checkpoints, undo and redo'],
+    concepts: [
+      c('log', 'log', ['log-based recovery', 'write-ahead logging', 'WAL']),
+      c('undo_redo', 'undo', ['redo']),
+      c('checkpoint', 'checkpoint'),
+      c('deferred_immediate', 'deferred update', ['immediate update'], 'detail'),
+      c('shadow', 'shadow paging', [], 'detail'),
+    ],
+    blocks: ['explanation', 'steps', 'keyFacts', 'revision', 'mcqs'],
+    comparisons: ['Deferred vs immediate update'],
+    facts: [],
+    examples: [],
+    mcqs: { min: 4 },
+  },
+};

@@ -1,6 +1,9 @@
 import crypto from 'node:crypto';
 
 import { sampleQuestionBank } from '../data/sampleQuestions.js';
+// Circular import with geminiClient.js is safe: both only use each other's
+// exports inside functions, never at module load.
+import { quotaInfo } from './geminiClient.js';
 
 /**
  * A generator takes a validated request:
@@ -104,8 +107,12 @@ const RESPONSE_SCHEMA = {
   required: ['questions'],
 };
 
-/** HTTP statuses worth trying another model for (overload / rate limit / server). */
-const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+/**
+ * HTTP statuses worth trying another model for (overload / server).
+ * 429 (quota exhausted) is NOT here: it fails at once — no retry, no model
+ * switch, no sample fallback — so the student is told to try later.
+ */
+const RETRYABLE = new Set([500, 502, 503, 504]);
 
 export class GeminiQuestionGenerator {
   constructor({ geminiApiKey, geminiModels, timeoutMs }, fetchImpl = fetch, log = console) {
@@ -144,6 +151,10 @@ Write ${count} exam-level questions for ${exam.name}.`;
       } catch (err) {
         lastError = err;
         if (err instanceof AiServiceError && !err.retryable) throw err; // bad key etc.
+        if (err.quotaExhausted) {
+          this.log.error?.(`[questions] Gemini quota exhausted — not retried, no model switch: ${JSON.stringify(err.quota)}`);
+          throw err;
+        }
         this.log.warn?.(`Gemini ${model} failed (${err.message}); trying next model`);
       }
     }
@@ -183,6 +194,14 @@ Write ${count} exam-level questions for ${exam.name}.`;
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = body?.error?.message ?? `HTTP ${res.status}`;
+      if (res.status === 429) {
+        const quota = quotaInfo(body, model);
+        throw Object.assign(new AiServiceError(`HTTP 429 ${quota.geminiStatus ?? ''}: ${msg}`.split('\n')[0], true), {
+          quotaExhausted: true,
+          quota,
+          retryAfterSeconds: quota.retryAfterSeconds,
+        });
+      }
       if (res.status === 400 || res.status === 401 || res.status === 403) {
         this.log.error?.(`Gemini rejected the request (${res.status}): ${msg} — check GEMINI_API_KEY / model`);
         throw new AiServiceError('AI service is not configured correctly.', false);
@@ -240,6 +259,8 @@ export class FallbackGenerator {
       return await this.primary.generate(request);
     } catch (err) {
       if (err instanceof AiServiceError && !err.retryable) throw err;
+      // Quota used up: say so instead of quietly serving sample questions.
+      if (err.quotaExhausted) throw err;
       this.log.warn?.(`Live AI unavailable (${err.message}); serving sample questions`);
       return this.fallback.generate(request);
     }

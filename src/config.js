@@ -8,6 +8,10 @@ if (isProduction && !env.JWT_SECRET) {
   throw new Error('JWT_SECRET must be set in production');
 }
 
+/** Unset → fallback; "none"/"null" → null (no separate cap). */
+const optionalNumber = (v, fallback) =>
+  v == null || v === "" ? fallback : ["none", "null"].includes(v) ? null : Number(v);
+
 const list = (v, fallback) =>
   (v ?? fallback)
     .split(',')
@@ -49,13 +53,17 @@ export const config = {
     timeoutMs: Number(env.AI_TIMEOUT_MS ?? 40_000),
     // When every model fails, serve labelled sample questions instead of an error.
     fallbackToSamples: (env.AI_FALLBACK_TO_SAMPLES ?? 'true') === 'true',
-    maxQuestionsPerRequest: Number(env.AI_MAX_QUESTIONS ?? 30),
+    // Hard cap per request (any plan); plan limits below are usually lower.
+    maxQuestionsPerRequest: Number(env.AI_MAX_QUESTIONS ?? 40),
     generationsPerHour: Number(env.AI_GENERATIONS_PER_HOUR ?? 20),
     // AI Study Notes have their own hourly limit (separate from questions).
     notesPerHour: Number(env.AI_NOTES_PER_HOUR ?? 20),
   },
+  // Comma-separated user ids with admin preview (draft outlines).
+  adminUserIds: list(env.ADMIN_USER_IDS, ''),
   notes: {
     // Show curated outlines that are still drafts (for review in dev only).
+    // Admins only: show draft outlines without ?preview=1 (development).
     showDraftOutlines: env.NOTES_SHOW_DRAFT_OUTLINES === 'true',
   },
   practice: {
@@ -66,19 +74,24 @@ export const config = {
   },
   // Free vs Pro. Limits are enforced on the server; the app only displays them.
   plans: {
+    // Daily limits reset at the student's local midnight (see subscription.js).
+    // aiSetsPerDay: AI-generated sets per day (0 = none, null = no separate
+    // cap). Bank and AI sets both count toward setsPerDay.
     free: {
       setsPerDay: Number(env.FREE_SETS_PER_DAY ?? 2),
+      aiSetsPerDay: optionalNumber(env.FREE_AI_SETS_PER_DAY, 1),
       maxQuestionsPerSet: Number(env.FREE_MAX_QUESTIONS_PER_SET ?? 10),
       // Every generated set is saved to the Library automatically, so saved
       // sets are unlimited by default. Set FREE_MAX_SAVED to cap them again.
       maxSaved: env.FREE_MAX_SAVED ? Number(env.FREE_MAX_SAVED) : null,
-      freshAi: false,
+      customCount: false,
     },
     pro: {
       // Fair use: generous, but caps a runaway AI bill.
       questionsPerDay: Number(env.PRO_QUESTIONS_PER_DAY ?? 300),
-      maxQuestionsPerSet: Number(env.PRO_MAX_QUESTIONS_PER_SET ?? 30),
-      freshAi: true,
+      aiSetsPerDay: optionalNumber(env.PRO_AI_SETS_PER_DAY, null),
+      maxQuestionsPerSet: Number(env.PRO_MAX_QUESTIONS_PER_SET ?? 40),
+      customCount: true,
     },
     trialDays: Number(env.TRIAL_DAYS ?? 7),
     // Shown on the Plans screen (prices include GST). Payment is not wired yet.

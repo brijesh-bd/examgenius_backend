@@ -10,6 +10,7 @@ import { LibraryStore } from './services/libraryStore.js';
 import { NotesStore } from './services/notesStore.js';
 import { LearningProgressStore } from './services/learningProgressStore.js';
 import { SectionCache } from './services/sectionCache.js';
+import { SectionJobs } from './services/sectionJobs.js';
 import { NotesQuota } from './services/notesQuota.js';
 import { createSectionGenerator } from './services/sectionGenerator.js';
 import { createNotesGenerator } from './services/notesGenerator.js';
@@ -34,6 +35,7 @@ const app = createApp({
   notes: new NotesStore(db),
   progress: new LearningProgressStore(db),
   sectionCache: new SectionCache(db),
+  sectionJobs: new SectionJobs(db),
   notesQuota: new NotesQuota(db, { perHour: config.ai.notesPerHour }),
   sectionGenerator: createSectionGenerator(config.ai),
   notesGenerator: createNotesGenerator(config.ai),

@@ -33,6 +33,8 @@ export async function connectDb({ uri, db: dbName }) {
     studyNotes: db.collection('study_notes'),
     learningProgress: db.collection('learning_progress'),
     sectionCache: db.collection('section_cache'),
+    // Generation lease + last outcome per shared section (services/sectionJobs.js).
+    sectionJobs: db.collection('section_jobs'),
     aiGenerationLog: db.collection('ai_generation_log'),
   };
 
@@ -74,6 +76,8 @@ export async function connectDb({ uri, db: dbName }) {
     collections.learningProgress.createIndex({ userId: 1, examId: 1, subjectId: 1 }),
     collections.sectionCache.createIndex({ key: 1, rev: -1 }, { unique: true }),
     collections.sectionCache.createIndex({ unitId: 1, status: 1 }),
+    collections.sectionCache.createIndex({ key: 1, status: 1, rev: -1 }),
+    collections.sectionJobs.createIndex({ state: 1, leaseUntil: 1 }),
     collections.aiGenerationLog.createIndex({ userId: 1, kind: 1, at: -1 }),
     // Quota entries are only needed for the last hour; keep a day for audits.
     collections.aiGenerationLog.createIndex({ at: 1 }, { expireAfterSeconds: 86_400 }),

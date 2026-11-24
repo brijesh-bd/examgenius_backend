@@ -4,8 +4,11 @@ import { AiServiceError, GenerationError } from './questionGenerator.js';
  * Gemini JSON calls shared by the AI Study Notes generators.
  *
  * Error policy:
- *  - Transient (429 rate limit, 500/502/503/504, timeout, network): retried
- *    ONCE on the same model after a short backoff, then the next model.
+ *  - Quota exhausted (HTTP 429 RESOURCE_EXHAUSTED): logged with the quota
+ *    metric, model and retry delay, then the request fails at once — no
+ *    retry and no switch to another model (the student retries later).
+ *  - Transient (500/502/503/504, timeout, network): retried ONCE on the same
+ *    model after a short backoff, then the next model (logged).
  *  - Model not found (404): no retry; the next model is tried.
  *  - Permanent (400 bad request, 401/403 key/permission): no retry, no
  *    fallback — the request fails immediately (retrying cannot help).
@@ -15,7 +18,7 @@ import { AiServiceError, GenerationError } from './questionGenerator.js';
  * never silent.
  */
 
-const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+const TRANSIENT = new Set([500, 502, 503, 504]);
 
 /** Flash-Lite is not allowed for study notes (too shallow). */
 export const isLiteModel = (m) => /lite/i.test(m);
@@ -55,6 +58,11 @@ export class GeminiJsonClient {
           failed.push(reason);
           this.log.warn?.(`[${label}] ${reason}`);
           if (err.permanent) throw err; // bad key / bad request: stop now
+          if (err.quotaExhausted) {
+            // Retrying or switching models would only burn more quota.
+            this.log.error?.(`[${label}] Gemini quota exhausted — not retried, no model switch: ${JSON.stringify(err.quota)}`);
+            throw err;
+          }
           if (err.modelMissing) break; // try the next model, no retry
           if (attempt === 1 && err.transient) {
             await this.sleep(this.backoffMs + Math.floor(Math.random() * 1000));
@@ -100,13 +108,11 @@ export class GeminiJsonClient {
     if (!res.ok) {
       const msg = `HTTP ${res.status} ${body?.error?.status ?? ''}: ${body?.error?.message ?? ''}`.trim();
       if (res.status === 404) throw tag(new AiServiceError(msg, true), { modelMissing: true });
+      if (res.status === 429) {
+        const quota = quotaInfo(body, model);
+        throw tag(new AiServiceError(msg.split('\n')[0], true), { quotaExhausted: true, quota, retryAfterSeconds: quota.retryAfterSeconds });
+      }
       if (TRANSIENT.has(res.status)) {
-        // A quota that resets in minutes/hours (e.g. the Free Tier daily
-        // limit) is not worth a quick retry: go straight to the next model.
-        const wait = retryDelaySeconds(body);
-        if (wait !== null && wait > MAX_RETRY_WAIT_S) {
-          throw tag(new AiServiceError(msg.split('\n')[0], true), { quotaExhausted: true, retryAfterSeconds: wait });
-        }
         throw tag(new AiServiceError(msg.split('\n')[0], true), { transient: true });
       }
       // 400 / 401 / 403: configuration problem (key, permission, request).
@@ -129,14 +135,32 @@ export class GeminiJsonClient {
   }
 }
 
-/** Retry once only when Google asks to wait at most this long. */
-const MAX_RETRY_WAIT_S = 30;
-
 /** `RetryInfo.retryDelay` ("72364s") from a Gemini error body, in seconds. */
 export function retryDelaySeconds(body) {
   const info = (body?.error?.details ?? []).find((d) => String(d?.['@type'] ?? '').endsWith('RetryInfo'));
   const m = /^([\d.]+)s$/.exec(info?.retryDelay ?? '');
   return m ? Number(m[1]) : null;
+}
+
+/**
+ * What a 429 says: HTTP status, Gemini error status, quota metric/id/limit
+ * (QuotaFailure), model and the suggested wait (RetryInfo).
+ */
+export function quotaInfo(body, model) {
+  const details = body?.error?.details ?? [];
+  const failure = details.find((d) => String(d?.['@type'] ?? '').endsWith('QuotaFailure'));
+  return {
+    httpStatus: 429,
+    geminiStatus: body?.error?.status ?? null,
+    model,
+    violations: (failure?.violations ?? []).map((v) => ({
+      metric: v.quotaMetric ?? null,
+      id: v.quotaId ?? null,
+      limit: v.quotaValue ?? null,
+      dimensions: v.quotaDimensions ?? null,
+    })),
+    retryAfterSeconds: retryDelaySeconds(body),
+  };
 }
 
 function tag(err, flags) {

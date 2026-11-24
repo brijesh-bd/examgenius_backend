@@ -17,7 +17,7 @@ export class PracticeStore {
 
   // ── Sessions ──────────────────────────────────────────────────────────────
 
-  async createSession({ userId, exam, subjects, topics, difficulty, requestedCount, questions, isPreview, retryOf = null, setId = null }) {
+  async createSession({ userId, exam, subjects, topics, difficulty, requestedCount, questions, isPreview, retryOf = null, setId = null, questionSource = null }) {
     const session = {
       _id: crypto.randomUUID(),
       userId,
@@ -30,6 +30,7 @@ export class PracticeStore {
       isPreview,
       retryOf,
       setId, // Library set this test belongs to (null for partial retries)
+      questionSource, // "bank" | "ai" (null for retries / older sets)
       timeLimitSeconds: questions.length ? questions.length * this.cfg.secondsPerQuestion : null,
       questions,
       createdAt: new Date(),
@@ -210,6 +211,7 @@ export function toPublicSession(s) {
     requestedCount: s.requestedCount,
     timeLimitSeconds: s.timeLimitSeconds,
     isPreview: s.isPreview,
+    questionSource: s.questionSource ?? null,
     questions: s.questions.map((q) => ({
       id: q.id,
       topicId: q.topicId,
