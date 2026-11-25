@@ -68,6 +68,7 @@ class FakeAi {
       return {
         id: `fake_${n}`,
         topicId: topics[i % topics.length].id,
+        nodeId: topics[i % topics.length].concepts?.[i % topics[i % topics.length].concepts.length]?.nodeId,
         difficulty,
         question: `Fake AI question number ${n}?`,
         options: [`${n}a`, `${n}b`, `${n}c`, `${n}d`],
@@ -568,8 +569,11 @@ test('Gemini: falls back to the next model when overloaded; drops invalid questi
     quiet,
   );
   const r = await gen.generate(request);
-  assert.equal(calls.length, 2);
+  // m1 busy → m2; one invalid question dropped → one top-up call on m2
+  // (it returns a duplicate, which is rejected, so the set stays at 1).
+  assert.equal(calls.length, 3);
   assert.match(calls[1], /models\/m2:generateContent/);
+  assert.match(calls[2], /models\/m2:generateContent/);
   assert.equal(r.model, 'm2');
   assert.equal(r.questions.length, 1);
   assert.equal(r.questions[0].formula, 'W = R × T');
@@ -2252,10 +2256,57 @@ test('history outlines: drafts, nested, every section has a checklist, cross-ref
     }
   }
   // Attached wherever the exam has History; never to Banking.
-  assert.deepEqual(examsSharing('general_awareness.history.freedom_struggle').sort(), ['rrb_alp', 'rrb_group_d', 'rrb_je', 'rrb_ntpc', 'ssc_cgl', 'ssc_chsl', 'ssc_cpo', 'ssc_gd', 'ssc_mts'].sort());
+  assert.deepEqual(examsSharing('general_awareness.history.freedom_struggle').sort(), ['rrb_group_d', 'rrb_je', 'rrb_ntpc', 'rrb_tech_gr1_signal', 'rrb_tech_gr3', 'ssc_cgl', 'ssc_chsl', 'ssc_cpo', 'ssc_gd', 'ssc_mts'].sort());
   const ibps = buildExamTree('ibps_po', { includeDrafts: true });
   assert.equal(JSON.stringify(ibps).includes('freedom_struggle'), false);
   // Boundary: the Revolt of 1857 is only in Freedom Struggle.
   const modern = findOutline('general_awareness.history.modern', { includeDrafts: true });
   assert.equal(modern.chapters.some((c) => c.id === 'revolt_1857'), false);
+});
+
+// ── Railway Mathematics concept scope (practice + notes use the same ids) ─────
+test("railway maths: practice and study notes use exact syllabus node ids", async () => {
+  const t = await reg("8000000901");
+  const nodeIds = ["rm.number_system.divisibility", "rm.number_system.divisibility.rules.by_3"];
+  const r = await strict("POST", "/questions/generate", { examId: "rrb_ntpc", subjectId: "quant", selectedNodeIds: nodeIds, source: "ai", count: 5, language: "en" }, t);
+  assert.equal(r.status, 201);
+  const stored = await db.sessions.findOne({ _id: r.body.sessionId });
+  assert.ok(stored.questions.every((q) => q.nodeId?.startsWith("rm.number_system.divisibility.")));
+  assert.ok(r.body.questions.every((q) => q.correctIndex === undefined && q.nodeId));
+  // Bank questions keep the concept tag for later scoped bank sets.
+  assert.ok((await db.questionBank.countDocuments({ nodeId: { $regex: "^rm\.number_system\.divisibility" } })) >= 5);
+  // Out-of-exam / unknown ids are refused before any quota is used.
+  const bad = await strict("POST", "/questions/generate", { examId: "rrb_ntpc", selectedNodeIds: ["rm.calendar_clock"], source: "ai", count: 5 }, t);
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.code, "INVALID_NODES");
+  // Submit/scoring unchanged.
+  const answers = Object.fromEntries(r.body.questions.map((q) => [q.id, 0]));
+  assert.equal((await strict("POST", `/practice/${r.body.sessionId}/submit`, { answers, timeTakenSeconds: 30 }, t)).status, 200);
+  // Notes for one concept.
+  const n = await call("POST", "/notes/generate", { examId: "rrb_je", nodeId: "rm.number_system.divisibility.rules.by_11", sections: ["explanation"] }, token);
+  assert.equal(n.status, 201);
+  assert.equal(n.body.topicId, "rm.number_system.divisibility.rules.by_11");
+  assert.equal((await call("POST", "/notes/generate", { examId: "rrb_ntpc", nodeId: "rm.calendar_clock.clock", sections: ["explanation"] }, token)).status, 400);
+});
+
+test("syllabus trees: reasoning concept practice is exam-scoped with automatic difficulty", async () => {
+  const t = await reg("8000000902");
+  // Group D → one micro-concept → only that concept, Group D's level (easy).
+  const r = await strict("POST", "/questions/generate", { examId: "rrb_group_d", subjectId: "reasoning", selectedNodeIds: ["rr.number_series.task.missing_term"], source: "ai", count: 5, difficulty: "hard" }, t);
+  assert.equal(r.status, 201);
+  const stored = await db.sessions.findOne({ _id: r.body.sessionId });
+  assert.equal(stored.difficulty, "easy");
+  assert.ok(stored.questions.every((q) => q.nodeId === "rr.number_series.task.missing_term" && q.subjectId === "reasoning"));
+  assert.deepEqual(stored.questions[0].syllabusPath, ["rr.number_series", "rr.number_series.task", "rr.number_series.task.missing_term"]);
+  // NTPC-only chapter refused for Group D; figure node refused everywhere.
+  for (const id of ["rr.maps_graphs", "rr.analogy.figure"]) {
+    const bad = await strict("POST", "/questions/generate", { examId: "rrb_group_d", subjectId: "reasoning", selectedNodeIds: [id], source: "ai", count: 5 }, t);
+    assert.equal(bad.status, 400, id);
+  }
+  // Notes for a General Awareness node (JE).
+  const n = await call("POST", "/notes/generate", { examId: "rrb_je", nodeId: "ga.history.ancient.mauryan.ashoka", sections: ["explanation"] }, token);
+  assert.equal(n.status, 201);
+  assert.equal(n.body.topicId, "ga.history.ancient.mauryan.ashoka");
+  // Legacy topic-level practice still works.
+  assert.equal((await call("POST", "/questions/generate", { examId: "rrb_group_d", topicIds: ["reasoning.analogy"], source: "ai", count: 5 }, token)).status, 201);
 });

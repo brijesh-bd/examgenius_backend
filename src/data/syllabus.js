@@ -194,10 +194,14 @@ const _sscBasic = [_reasoningGeneral, _generalAwareness, _quantBasic, _english];
 const _bankStandard = [_reasoningBanking, _quantBanking, _english, _bankingAwareness, _computer];
 
 export const examSubjects = {
-  'rrb_ntpc': [_quantRailway, _reasoningGeneral, _generalAwareness, _generalScience],
+  // Railway subject lists follow the exam-wise coverage (syllabus-drafts/coverage.md):
+  // NTPC has General Science inside GA; ALP CBT-1 has no GA (2026 pattern).
+  'rrb_ntpc': [_quantRailway, _reasoningGeneral, _generalAwareness],
   'rrb_group_d': [_quantRailway, _reasoningGeneral, _generalScience, _generalAwareness],
-  'rrb_alp': [_quantRailway, _reasoningGeneral, _generalScience, _generalAwareness, _technicalAlp],
+  'rrb_alp': [_quantRailway, _reasoningGeneral, _generalScience, _technicalAlp],
   'rrb_je': [_quantRailway, _reasoningGeneral, _generalAwareness, _generalScience, _technicalJe],
+  'rrb_tech_gr1_signal': [_quantRailway, _reasoningGeneral, _generalAwareness],
+  'rrb_tech_gr3': [_quantRailway, _reasoningGeneral, _generalAwareness, _generalScience],
   'ssc_cgl': [..._sscStandard, _computer],
   'ssc_chsl': [..._sscStandard, _computer],
   'ssc_mts': _sscBasic,

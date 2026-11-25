@@ -104,7 +104,7 @@ export const RESPONSE_SCHEMA = obj({
   nextTopics: strList,
 });
 
-export function buildNotesPrompt({ exam, subject, topic, unitOf = null, language, level, sections }) {
+export function buildNotesPrompt({ exam, subject, topic, unitOf = null, concept = null, language, level, sections }) {
   const wanted = sections.map((s) => `- ${SECTION_GUIDE[s]}`).join('\n');
   const lang =
     language === 'hi'
@@ -113,7 +113,8 @@ export function buildNotesPrompt({ exam, subject, topic, unitOf = null, language
   return `Exam: ${exam.name}
 Subject: ${subject.name}
 Topic: ${topic.name}${unitOf ? `
-This is ONE learning unit of the broad topic "${unitOf.topicName}". Explain only this unit in full depth; the other units (${unitOf.otherUnits.join(', ')}) are studied separately.` : ''}
+This is ONE learning unit of the broad topic "${unitOf.topicName}". Explain only this unit in full depth; the other units (${unitOf.otherUnits.join(', ')}) are studied separately.` : ''}${concept ? `
+This is ONE syllabus concept (${concept.path}). Write notes ONLY for this syllabus node: its definitions and key facts, every formula with what each symbol means (if any), worked examples${concept.patterns?.length ? `, these question patterns: ${concept.patterns.join('; ')}` : ''}${concept.covers?.length ? `, covering: ${concept.covers.join('; ')}` : ''}, and the common mistakes students make. Do not cover other parts of the chapter.` : ''}
 Level: ${LEVEL_GUIDE[level]}
 
 Always include: overview (4-6 sentences) and nextTopics (3-5 related topics to study next).

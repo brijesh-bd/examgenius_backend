@@ -27,6 +27,10 @@ export class SampleQuestionGenerator {
   }
 
   async generate({ topics, difficulty, count }) {
+    // Sample questions are not tagged with concepts: never pass them off as in scope.
+    if (topics.some((t) => t.concepts?.length)) {
+      throw new GenerationError('Concept practice needs live AI, which is not available right now.');
+    }
     const topicIds = new Set(topics.map((t) => t.id));
     const subjects = new Set(topics.map((t) => subjectOf(t.id)));
     const atLevel = this.bank.filter((q) => q.difficulty === difficulty);
@@ -79,7 +83,8 @@ Rules for every question:
 - Use ₹ for money and Indian context where natural. No questions that depend on images or diagrams.
 - For current affairs topics, stick to stable facts and avoid events whose details may have changed.
 - Never repeat a question; vary the sub-concepts within each topic.
-- topicId must be one of the topic ids given in the request.`;
+- topicId must be one of the topic ids given in the request.
+- When the request lists concepts, every question must test exactly one listed concept: set nodeId to that concept's id, follow one of its question patterns, and never drift into other concepts or chapters.`;
 
 const RESPONSE_SCHEMA = {
   type: 'OBJECT',
@@ -90,6 +95,7 @@ const RESPONSE_SCHEMA = {
         type: 'OBJECT',
         properties: {
           topicId: { type: 'STRING' },
+          nodeId: { type: 'STRING' },
           question: { type: 'STRING' },
           options: { type: 'ARRAY', items: { type: 'STRING' } },
           correctIndex: { type: 'INTEGER' },
@@ -124,7 +130,16 @@ export class GeminiQuestionGenerator {
   }
 
   buildPrompt({ exam, topics, difficulty, count, language }) {
-    const topicList = topics.map((t) => `- ${t.id}: ${t.name} (${t.subjectName})`).join('\n');
+    const topicList = topics
+      .map((t) => {
+        const head = `- ${t.id}: ${t.name} (${t.subjectName})`;
+        if (!t.concepts?.length) return head;
+        const concepts = t.concepts
+          .map((c) => `    - nodeId ${c.nodeId}: ${c.path ? `${c.path} › ` : ''}${c.name}. Patterns: ${c.patterns.join('; ')}`)
+          .join('\n');
+        return `${head}\n  Concepts (use ONLY these; spread questions across them):\n${concepts}`;
+      })
+      .join('\n');
     const lang =
       language === 'hi'
         ? 'Write the question, options, explanation, steps, concept, tip and wrongReasons in Hindi (Devanagari script). Keep numbers, formulas and proper nouns as usual.'
@@ -145,9 +160,19 @@ Write ${count} exam-level questions for ${exam.name}.`;
     for (const model of this.models) {
       try {
         const raw = await this.#call(model, prompt);
-        const questions = this.#validate(raw, request);
+        let questions = this.#validate(raw, request);
         if (questions.length === 0) throw new GenerationError('No valid questions were generated. Please try again.');
-        return { questions, isPreview: false, model };
+        // Invalid questions were rejected: ask once more for the missing ones.
+        const missing = request.count - questions.length;
+        if (missing > 0) {
+          try {
+            const extra = await this.#call(model, this.buildPrompt({ ...request, count: missing }));
+            questions = [...questions, ...this.#validate(extra, request, questions).slice(0, missing)];
+          } catch (err) {
+            this.log.warn?.(`Top-up generation failed (${err.message}); keeping ${questions.length} questions`);
+          }
+        }
+        return { questions: questions.slice(0, request.count), isPreview: false, model };
       } catch (err) {
         lastError = err;
         if (err instanceof AiServiceError && !err.retryable) throw err; // bad key etc.
@@ -221,14 +246,14 @@ Write ${count} exam-level questions for ${exam.name}.`;
     }
   }
 
-  #validate(raw, { topics, difficulty, count }) {
-    const allowed = new Set(topics.map((t) => t.id));
-    return (raw?.questions ?? [])
-      .filter((q) => isValidQuestion(q, allowed))
+  #validate(raw, { topics, difficulty, count }, already = []) {
+    return filterQuestions(raw?.questions ?? [], topics, already)
       .slice(0, count)
       .map((q) => ({
         id: crypto.randomUUID(),
         topicId: q.topicId,
+        nodeId: conceptScope(topics) ? q.nodeId : null,
+        validation: { status: 'passed', checks: VALIDATION_CHECKS, scoped: Boolean(conceptScope(topics)) },
         difficulty,
         question: q.question.trim(),
         options: q.options.map((o) => o.trim()),
@@ -265,6 +290,83 @@ export class FallbackGenerator {
       return this.fallback.generate(request);
     }
   }
+}
+
+export const VALIDATION_CHECKS = [
+  'structure',
+  'four_unique_options',
+  'single_answer_index',
+  'concept_scope',
+  'answer_explanation_consistency',
+  'no_duplicates',
+];
+
+const normText = (s) => String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/** topicId → Set(concept nodeIds) when the request is concept-scoped, else null. */
+export function conceptScope(topics) {
+  if (!topics.some((t) => t.concepts?.length)) return null;
+  return new Map(topics.map((t) => [t.id, new Set((t.concepts ?? []).map((c) => c.nodeId))]));
+}
+
+/**
+ * Keeps only questions that pass every check: structure, concept scope,
+ * answer/solution consistency, and no duplicates (also against [already]).
+ */
+export function filterQuestions(questions, topics, already = []) {
+  const allowed = new Set(topics.map((t) => t.id));
+  const scope = conceptScope(topics);
+  const seen = new Set(already.map((q) => normText(q.question)));
+  return questions.filter((q) => {
+    if (!isValidQuestion(q, allowed)) return false;
+    if (scope && !scope.get(q.topicId)?.has(q.nodeId)) return false;
+    if (checkAnswerConsistency(q).length) return false;
+    const key = normText(q.question);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Numbers in a string ("₹1,250.50" → 1250.5, "3/4" → 0.75). */
+export function numbersIn(text) {
+  const out = [];
+  const clean = String(text ?? '').replace(/(\d),(?=\d{2,3}\b)/g, '$1');
+  for (const m of clean.matchAll(/-?\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g)) {
+    const [a, b] = m[0].split('/').map((x) => Number(x.trim()));
+    out.push(b ? a / b : a);
+  }
+  return out;
+}
+
+const same = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+
+/**
+ * Checks the answer key against the question's own worked solution, for
+ * options that are single numbers: all four values distinct, the correct
+ * value appears in the explanation/steps, and the explanation's final
+ * result is not a WRONG option. Returns problems (empty = consistent).
+ * This cannot prove the mathematics right; it rejects keys that
+ * contradict their own working.
+ */
+export function checkAnswerConsistency(q) {
+  const problems = [];
+  const values = q.options.map((o) => {
+    const ns = numbersIn(o);
+    return ns.length === 1 ? ns[0] : null;
+  });
+  if (values.some((v) => v === null)) return problems; // non-numeric options: structural checks only
+  if (new Set(values.map((v) => v.toFixed(6))).size !== 4) problems.push('two options have the same value');
+  const working = [q.explanation, ...(Array.isArray(q.steps) ? q.steps : [])].join(' ');
+  const nums = numbersIn(working);
+  const correct = values[q.correctIndex];
+  if (nums.length && !nums.some((n) => same(n, correct))) problems.push('correct option value not found in the solution');
+  const tail = numbersIn(String(q.explanation).split('=').at(-1));
+  const final = tail.at(-1);
+  if (String(q.explanation).includes('=') && final != null && !same(final, correct) && values.some((v, i) => i !== q.correctIndex && same(v, final))) {
+    problems.push('solution ends on a wrong option');
+  }
+  return problems;
 }
 
 /** Drops malformed questions so the app never shows a broken MCQ. */

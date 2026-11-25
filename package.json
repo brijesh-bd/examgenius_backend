@@ -9,7 +9,9 @@
     "try-generate": "node scripts/try-generate.js",
     "grant-pro": "node scripts/grant-pro.js",
     "migrate-library": "node scripts/migrate-library.js",
-    "notes-cache": "node scripts/notes-cache.js"
+    "notes-cache": "node scripts/notes-cache.js",
+    "railway-math": "node scripts/sync-railway-math.js",
+    "syllabus": "node scripts/sync-syllabus.js"
   },
   "type": "module",
   "dependencies": {

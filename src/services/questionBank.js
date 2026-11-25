@@ -33,9 +33,11 @@ export class QuestionBank {
    * Up to [count] unseen AI questions for these topics/level/language,
    * spread across the requested topics as evenly as the bank allows.
    */
-  async pick({ topicIds, difficulty, language, count, excludeIds = [] }) {
+  async pick({ topicIds, nodeIds = null, difficulty, language, count, excludeIds = [] }) {
     if (count <= 0) return [];
     const base = { difficulty, language, source: 'ai', _id: { $nin: excludeIds } };
+    // Concept-scoped sets only use questions tagged with one of those concepts.
+    if (nodeIds) base.nodeId = { $in: nodeIds };
     const perTopic = Math.ceil(count / topicIds.length);
     const picked = [];
     for (const topicId of topicIds) {
@@ -63,8 +65,9 @@ export class QuestionBank {
    * Stored questions matching the filters: `total`, and `unseen` (not in
    * this student's recent tests). Used to check a bank set BEFORE creating it.
    */
-  async availability({ topicIds, difficulty, language, seenIds = [] }) {
+  async availability({ topicIds, nodeIds = null, difficulty, language, seenIds = [] }) {
     const match = { difficulty, language, source: 'ai', topicId: { $in: topicIds } };
+    if (nodeIds) match.nodeId = { $in: nodeIds };
     const [total, seen] = await Promise.all([
       this.bank.countDocuments(match),
       seenIds.length ? this.bank.countDocuments({ ...match, _id: { $in: seenIds } }) : 0,
@@ -76,11 +79,12 @@ export class QuestionBank {
    * A full bank set: unseen questions first; when those run out, questions
    * the student has met before (never more than the bank holds).
    */
-  async pickSet({ topicIds, difficulty, language, count, seenIds = [] }) {
-    const fresh = await this.pick({ topicIds, difficulty, language, count, excludeIds: seenIds });
+  async pickSet({ topicIds, nodeIds = null, difficulty, language, count, seenIds = [] }) {
+    const fresh = await this.pick({ topicIds, nodeIds, difficulty, language, count, excludeIds: seenIds });
     if (fresh.length >= count) return fresh;
     const again = await this.pick({
       topicIds,
+      nodeIds,
       difficulty,
       language,
       count: count - fresh.length,
@@ -103,6 +107,8 @@ export class QuestionBank {
       language,
       model: model ?? null,
       topicId: q.topicId,
+      nodeId: q.nodeId ?? null,
+      validation: q.validation ?? null,
       difficulty: q.difficulty,
       question: q.question,
       options: q.options,
@@ -145,6 +151,8 @@ function fromBankDoc(d) {
     id: crypto.randomUUID(), // per-session id; bankId links back to the bank
     bankId: d._id,
     topicId: d.topicId,
+    nodeId: d.nodeId ?? null,
+    validation: d.validation ?? null,
     difficulty: d.difficulty,
     question: d.question,
     options: d.options,

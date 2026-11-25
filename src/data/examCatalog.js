@@ -8,6 +8,8 @@ export const examCatalog = [
       {'id': 'rrb_group_d', 'name': 'RRB Group D', 'categoryId': 'railway'},
       {'id': 'rrb_alp', 'name': 'RRB ALP', 'categoryId': 'railway'},
       {'id': 'rrb_je', 'name': 'RRB JE', 'categoryId': 'railway'},
+      {'id': 'rrb_tech_gr1_signal', 'name': 'RRB Technician Grade I Signal', 'categoryId': 'railway'},
+      {'id': 'rrb_tech_gr3', 'name': 'RRB Technician Grade III', 'categoryId': 'railway'},
     ],
   },
   {

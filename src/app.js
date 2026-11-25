@@ -23,6 +23,11 @@ import { buildExamTree, walkTree } from './services/syllabusTree.js';
 import { findManifest, manifestReport } from './data/manifests/index.js';
 import { MODE_GUIDE, blocksFor, templateFor } from './data/contentTemplates.js';
 import { LimitError } from './services/subscription.js';
+import { examCatalog } from './data/examCatalog.js';
+import { examTreeSubjects, syllabusFor, syllabusOfNode } from './data/syllabusTrees/index.js';
+
+/** Bump when a syllabus tree changes in a way clients should refetch. */
+const SYLLABUS_TREES_VERSION = 2;
 
 const mobile = z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number');
 const identifier = z
@@ -183,6 +188,116 @@ export function createApp({
     res.json(syllabus);
   });
 
+  // ── Hierarchical syllabus (any subject with a concept tree) ───────────────
+  // Shared concept libraries + exam-wise mapping (src/data/syllabusTrees).
+  // Ids are stable and shared by practice and AI Study Notes. Each node
+  // carries its status for this exam: official | unverified | draft.
+  const treeOf = (examId, subjectId) => {
+    const exam = findExam(examId);
+    if (!exam) throw httpError(404, 'Unknown exam');
+    const tree = syllabusFor(exam.id, subjectId);
+    if (!tree) throw httpError(404, 'This subject has no syllabus tree for this exam');
+    return { exam, tree };
+  };
+  const treeBase = (exam, tree) => ({
+    examId: exam.id,
+    examName: exam.name,
+    subjectId: tree.subjectId,
+    syllabusId: tree.syllabusId,
+    syllabusVersion: SYLLABUS_TREES_VERSION,
+    difficulty: tree.difficulty(exam.id),
+    hasOfficial: [...tree.nodes.keys()].some((id) => tree.status(exam.id, id) === 'official'),
+  });
+  const NodeIdParam = z.string().regex(/^[a-z]{2}(\.[a-z0-9_]+){1,4}$/, 'Invalid node id');
+  const SubjectParam = z.string().regex(/^[a-z_]{2,40}$/, 'Invalid subject');
+
+  // Subjects of an exam, and which of them have a concept tree.
+  api.get('/syllabus/:examId/subjects', (req, res) => {
+    const exam = findExam(req.params.examId);
+    if (!exam) throw httpError(404, 'Unknown exam');
+    const trees = new Set(examTreeSubjects(exam.id));
+    res.json({
+      examId: exam.id,
+      subjects: (getSyllabus(exam.id)?.subjects ?? []).map((s) => {
+        const tree = trees.has(s.id) ? syllabusFor(exam.id, s.id) : null;
+        return {
+          id: s.id,
+          name: s.name,
+          hasTree: Boolean(tree),
+          chapterCount: tree ? tree.chapters(exam.id).length : 0,
+          conceptCount: tree ? tree.chapters(exam.id).reduce((n, c) => n + tree.leafIds(exam.id, c.nodeId).length, 0) : 0,
+        };
+      }),
+    });
+  });
+
+  const sendTree = (req, res, examId, subjectId) => {
+    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { nodeId } = z.object({ nodeId: NodeIdParam.optional() }).parse(req.query);
+    const nodes = tree.tree(exam.id, nodeId ?? null);
+    if (!nodes) throw httpError(404, 'Node not found in this exam');
+    res.json({ ...treeBase(exam, tree), nodes });
+  };
+  const sendChildren = (req, res, examId, subjectId) => {
+    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const nodeId = NodeIdParam.parse(req.params.nodeId);
+    if (!tree.isApplicable(exam.id, nodeId)) throw httpError(404, 'Node not found in this exam');
+    res.json({
+      ...treeBase(exam, tree),
+      nodeId,
+      children: tree.childIds(exam.id, nodeId).map((id) => tree.publicNode(exam.id, tree.getNode(id))),
+    });
+  };
+  const sendSearch = (req, res, examId, subjectId) => {
+    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const q = z
+      .object({ q: z.string().trim().min(1).max(60), limit: z.coerce.number().int().min(1).max(50).default(20) })
+      .parse(req.query);
+    res.json({ ...treeBase(exam, tree), query: q.q, results: tree.search(exam.id, q.q, { limit: q.limit }) });
+  };
+  const sendResolve = (req, res, examId, subjectId) => {
+    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { nodeIds } = z.object({ nodeIds: z.array(z.string().max(120)).min(1).max(400) }).parse(req.body);
+    const r = tree.resolve(exam.id, nodeIds);
+    if (r.invalid.length) throw Object.assign(httpError(400, 'Unknown syllabus nodes', 'INVALID_NODES'), { details: { invalid: r.invalid } });
+    res.json({ ...treeBase(exam, tree), selectedIds: r.selectedIds, conceptIds: r.conceptIds });
+  };
+
+  // Railway Mathematics paths from the previous release (kept for old builds).
+  api.get('/syllabus/railway/exams', (_req, res) => {
+    const exams = examCatalog.find((c) => c.id === 'railway')?.exams ?? [];
+    res.json({
+      exams: exams
+        .filter((e) => syllabusFor(e.id, 'quant'))
+        .map((e) => ({ ...e, subjectId: 'quant', chapterCount: syllabusFor(e.id, 'quant').chapters(e.id).length })),
+    });
+  });
+  api.get('/syllabus/railway/:examId/math', (req, res) => {
+    const { exam, tree } = treeOf(req.params.examId, 'quant');
+    res.json({ ...treeBase(exam, tree), chapters: tree.chapters(exam.id).map((n) => tree.publicNode(exam.id, n)) });
+  });
+  api.get('/syllabus/railway/:examId/math/nodes/:nodeId/children', (req, res) => sendChildren(req, res, req.params.examId, 'quant'));
+  api.get('/syllabus/railway/:examId/math/tree', (req, res) => sendTree(req, res, req.params.examId, 'quant'));
+  api.get('/syllabus/railway/:examId/math/search', (req, res) => sendSearch(req, res, req.params.examId, 'quant'));
+  api.post('/syllabus/railway/:examId/math/resolve', (req, res) => sendResolve(req, res, req.params.examId, 'quant'));
+  api.get('/syllabus/railway/:examId/math/applicability', (req, res) => {
+    const { exam, tree } = treeOf(req.params.examId, 'quant');
+    res.json({
+      ...treeBase(exam, tree),
+      chapters: [...tree.nodes.values()]
+        .filter((n) => n.nodeType === 'chapter')
+        .map((c) => ({ chapterId: c.nodeId, titleEn: c.titleEn, titleHi: c.titleHi, applicable: tree.isApplicable(exam.id, c.nodeId) })),
+    });
+  });
+
+  // Generic paths (declared after the railway aliases so "railway" is not an exam id).
+  api.get('/syllabus/:examId/:subjectId/tree', (req, res) => sendTree(req, res, req.params.examId, req.params.subjectId));
+  api.get('/syllabus/:examId/:subjectId/nodes/:nodeId/children', (req, res) =>
+    sendChildren(req, res, req.params.examId, req.params.subjectId),
+  );
+  api.get('/syllabus/:examId/:subjectId/search', (req, res) => sendSearch(req, res, req.params.examId, req.params.subjectId));
+  api.post('/syllabus/:examId/:subjectId/resolve', (req, res) => sendResolve(req, res, req.params.examId, req.params.subjectId));
+
   // ── Dashboard ─────────────────────────────────────────────────────────────
   api.get('/dashboard/summary', requireAuth, async (req, res) => {
     const results = await practice.recentResults(req.user._id, 100);
@@ -221,6 +336,10 @@ export function createApp({
       // 'quick': mixed set across the exam's subjects (no topics needed).
       mode: z.enum(['topics', 'quick']).default('topics'),
       topicIds: z.array(z.string()).max(60).default([]),
+      // Railway Mathematics concept selection (exact syllabus node ids).
+      // Parents are expanded to their concepts; questions stay in that scope.
+      subjectId: z.string().max(40).optional(),
+      selectedNodeIds: z.array(z.string().max(120)).max(400).default([]),
       difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
       count: z.number().int().min(1).max(config.ai.maxQuestionsPerRequest).default(10),
       level: z.literal('exam').optional(),
@@ -230,7 +349,52 @@ export function createApp({
       // Unique per generate tap: a retried request returns the set already saved.
       requestKey: z.string().min(8).max(100).optional(),
     })
-    .refine((b) => b.mode === 'quick' || b.topicIds.length > 0, { message: 'Select at least one topic' });
+    .refine((b) => b.mode === 'quick' || b.topicIds.length > 0 || b.selectedNodeIds.length > 0, {
+      message: 'Select at least one topic',
+    });
+
+  /**
+   * Concept scope of a node selection (any subject with a tree) → practice
+   * topics. Each topic carries its concepts ({nodeId, name, path, patterns});
+   * chapters sharing a practice topic are merged. One subject per request.
+   */
+  function conceptTopics(exam, nodeIds, language = 'en', subjectId = null) {
+    const subject = subjectId ?? syllabusOfNode(nodeIds[0])?.subjectId;
+    const tree = subject ? syllabusFor(exam.id, subject) : null;
+    if (!tree) throw httpError(400, `${exam.name} has no concept-level syllabus for this subject`, 'INVALID_NODES');
+    const r = tree.resolve(exam.id, nodeIds);
+    if (r.invalid.length) {
+      throw Object.assign(httpError(400, `Not in the ${exam.name} syllabus: ${r.invalid.slice(0, 5).join(', ')}`, 'INVALID_NODES'), {
+        details: { invalid: r.invalid },
+      });
+    }
+    const subjectName = getSyllabus(exam.id)?.subjects.find((s) => s.id === tree.subjectId)?.name ?? tree.subjectId;
+    const title = (n) => (language === 'hi' ? n.titleHi : n.titleEn);
+    const byTopic = new Map();
+    for (const [chapterId, conceptIds] of r.byChapter) {
+      const pt = tree.practiceTopic(exam.id, chapterId);
+      const t = byTopic.get(pt.id) ?? { id: pt.id, names: [], subjectId: tree.subjectId, subjectName, concepts: [] };
+      t.names.push(tree.getNode(chapterId).titleEn);
+      for (const cid of conceptIds) {
+        const path = tree.pathOf(cid);
+        t.concepts.push({
+          nodeId: cid,
+          name: title(path.at(-1)),
+          path: path.slice(0, -1).map((p) => p.titleEn).join(' › '),
+          patterns: path.at(-1).patterns ?? [],
+          // Chapter → … → concept ids, stored with every question.
+          syllabusPath: path.map((p) => p.nodeId),
+        });
+      }
+      byTopic.set(pt.id, t);
+    }
+    return {
+      tree,
+      selectedNodeIds: r.selectedIds,
+      difficulty: tree.difficulty(exam.id),
+      topics: [...byTopic.values()].map(({ names, ...t }) => ({ ...t, name: [...new Set(names)].join(' / ') })),
+    };
+  }
 
   const sourceOf = (b) => b?.source ?? (b?.fresh === true ? 'ai' : 'bank');
 
@@ -306,6 +470,8 @@ export function createApp({
         examId: z.string(),
         mode: z.enum(['topics', 'quick']).default('topics'),
         topicIds: z.string().optional(),
+        nodeIds: z.string().max(8000).optional(),
+        subjectId: z.string().max(40).optional(),
         difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
         language: z.enum(['en', 'hi']).default('en'),
       })
@@ -313,11 +479,14 @@ export function createApp({
     const exam = findExam(q.examId);
     if (!exam) throw httpError(404, 'Unknown exam');
     const topicIds = (q.topicIds ?? '').split(',').filter(Boolean);
-    if (q.mode === 'topics' && topicIds.length === 0) throw httpError(400, 'Select at least one topic');
-    const topics = practiceTopics(exam, { mode: q.mode, topicIds }, 'bank');
+    const nodeIds = (q.nodeIds ?? '').split(',').filter(Boolean);
+    if (q.mode === 'topics' && topicIds.length === 0 && nodeIds.length === 0) throw httpError(400, 'Select at least one topic');
+    const scope = q.mode === 'topics' && nodeIds.length ? conceptTopics(exam, nodeIds, 'en', q.subjectId ?? null) : null;
+    const topics = scope ? scope.topics : practiceTopics(exam, { mode: q.mode, topicIds }, 'bank');
     const avail = await bank.availability({
       topicIds: topics.map((t) => t.id),
-      difficulty: q.difficulty,
+      nodeIds: scope ? topics.flatMap((t) => t.concepts.map((c) => c.nodeId)) : null,
+      difficulty: scope ? scope.difficulty : q.difficulty,
       language: q.language,
       seenIds: await bank.seenBy(req.user._id),
     });
@@ -342,8 +511,13 @@ export function createApp({
     const source = sourceOf(body);
     const exam = findExam(body.examId);
     if (!exam) throw httpError(404, 'Unknown exam');
-    const topics = practiceTopics(exam, body, source);
+    const scoped = body.selectedNodeIds.length > 0 && body.mode !== 'quick';
+    const scope = scoped ? conceptTopics(exam, body.selectedNodeIds, body.language ?? 'en', body.subjectId ?? null) : null;
+    // Concept practice: level comes from the exam's syllabus (no student selector).
+    const difficulty = scope ? scope.difficulty : body.difficulty;
+    const topics = scope ? scope.topics : practiceTopics(exam, body, source);
     const topicIds = topics.map((t) => t.id);
+    const conceptIds = scope ? topics.flatMap((t) => t.concepts.map((c) => c.nodeId)) : null;
     // Plan rules first (set size, AI included) — before any bank lookup.
     subscription.assertAllowed(req.user, { count: body.count, source });
 
@@ -377,7 +551,7 @@ export function createApp({
     // Bank: make sure the full set exists BEFORE using a daily set.
     const seenIds = source === 'bank' ? await bank.seenBy(req.user._id) : [];
     if (source === 'bank') {
-      const avail = await bank.availability({ topicIds, difficulty: body.difficulty, language, seenIds });
+      const avail = await bank.availability({ topicIds, nodeIds: conceptIds, difficulty: difficulty, language, seenIds });
       if (avail.total < body.count) throw bankInsufficient(avail.total, body.count, await aiAlternative(req.user));
     }
 
@@ -391,7 +565,7 @@ export function createApp({
     let model = null;
     try {
       if (source === 'bank') {
-        questions = await bank.pickSet({ topicIds, difficulty: body.difficulty, language, count: body.count, seenIds });
+        questions = await bank.pickSet({ topicIds, nodeIds: conceptIds, difficulty: difficulty, language, count: body.count, seenIds });
         // Never a silently smaller set (e.g. the bank changed in between).
         if (questions.length < body.count) {
           throw bankInsufficient(questions.length, body.count, await aiAlternative(req.user));
@@ -401,7 +575,7 @@ export function createApp({
         const generated = await questionGenerator.generate({
           exam,
           topics,
-          difficulty: body.difficulty,
+          difficulty: difficulty,
           count: body.count,
           language,
         });
@@ -437,12 +611,13 @@ export function createApp({
       exam,
       subjects: [...new Set(usedTopics.map((t) => t.subjectName))],
       topics: usedTopics.map((t) => t.name),
-      difficulty: body.difficulty,
+      difficulty: difficulty,
       requestedCount: body.count,
       isPreview,
       questionSource: source,
       questions: questions.map((q) => ({
         ...q,
+        ...(scope && q.nodeId ? { subjectId: scope.tree.subjectId, syllabusPath: scope.tree.pathOf(q.nodeId).map((n) => n.nodeId) } : {}),
         topicName: byId.get(q.topicId)?.name ?? index.get(q.topicId)?.topic.name ?? q.topicId,
       })),
     });
@@ -457,7 +632,7 @@ export function createApp({
         exam,
         subjects: [...subjectsById].map(([id, name]) => ({ id, name })),
         topics: usedTopics.map((t) => ({ id: t.id, name: t.name, subjectId: t.subjectId })),
-        difficulty: body.difficulty,
+        difficulty: difficulty,
         language,
         questions: session.questions,
         sessionId: session._id,
@@ -479,7 +654,8 @@ export function createApp({
           mode: body.mode,
           subjectIds: [...new Set(topics.map((t) => t.subjectId))],
           topicIds: body.mode === 'quick' ? [] : topicIds,
-          difficulty: body.difficulty,
+          selectedNodeIds: scope ? scope.selectedNodeIds : [],
+          difficulty: difficulty,
           count: body.count,
           language,
           source,
@@ -678,7 +854,9 @@ export function createApp({
   // cached sections and failed attempts are free. Separate from questions.
   const NotesBody = z.object({
     examId: z.string(),
-    topicId: z.string(),
+    // A syllabus topic/unit, or (Railway Mathematics) an exact concept node id.
+    topicId: z.string().optional(),
+    nodeId: z.string().max(120).optional(),
     language: z.enum(['en', 'hi']).default('en'),
     level: z.enum(NOTE_LEVELS).default('exam'),
     sections: z.array(z.enum(NOTE_SECTIONS)).min(1).max(NOTE_SECTIONS.length),
@@ -691,6 +869,8 @@ export function createApp({
     const body = NotesBody.parse(req.body);
     const exam = findExam(body.examId);
     if (!exam) throw httpError(404, 'Unknown exam');
+    if (body.nodeId) return conceptNotes(req, res, exam, body);
+    if (!body.topicId) throw httpError(400, 'Select a topic');
     // A syllabus topic, or a curated unit of a broad topic.
     const found = findLearningItem(exam.id, body.topicId);
     if (!found) throw httpError(400, `Topic ${body.topicId} is not in the ${exam.name} syllabus`);
@@ -739,6 +919,66 @@ export function createApp({
     await notesQuota.record(req.user._id, { topicId: item.id });
     res.status(201).json(toPublicNote(note));
   });
+
+  /**
+   * Notes for one syllabus-tree node of any subject (concept, or a parent for
+   * an overview). Same node ids as practice; nothing is kept in a second tree.
+   */
+  async function conceptNotes(req, res, exam, body) {
+    const tree = syllabusOfNode(body.nodeId);
+    if (!tree || !tree.hasExam(exam.id) || !tree.isApplicable(exam.id, body.nodeId)) {
+      throw httpError(400, `${body.nodeId} is not in the ${exam.name} syllabus`, 'INVALID_NODES');
+    }
+    const previous = await notes.findByRequestKey(req.user._id, body.requestKey);
+    if (previous) return res.status(201).json(toPublicNote(previous));
+    await notesQuota.check(req.user._id);
+
+    const path = tree.pathOf(body.nodeId);
+    const node = path.at(-1);
+    const chapter = path[0];
+    const sections = [...new Set(body.sections)];
+    const subjectName = getSyllabus(exam.id)?.subjects.find((s) => s.id === tree.subjectId)?.name ?? tree.subjectId;
+    const subject = { id: tree.subjectId, name: subjectName };
+    const title = (n) => (body.language === 'hi' ? n.titleHi : n.titleEn);
+    const topic = { id: node.nodeId, name: path.map(title).join(' › ') };
+    const leaves = tree.leafIds(exam.id, node.nodeId);
+    const { content, model } = await notesGenerator.generate({
+      exam,
+      subject,
+      topic,
+      concept: {
+        path: path.map((p) => p.titleEn).join(' › '),
+        patterns: [...new Set(leaves.flatMap((id) => tree.getNode(id).patterns ?? []))].slice(0, 12),
+        covers: leaves.length > 1 ? leaves.slice(0, 20).map((id) => tree.getNode(id).titleEn) : [],
+      },
+      language: body.language,
+      level: body.level,
+      sections,
+    });
+    const checked = validateNoteContent(content, sections);
+    // Next: the following sibling nodes in syllabus order (real node ids).
+    const siblings = tree.childIds(exam.id, node.parentId);
+    checked.nextTopics = siblings
+      .slice(siblings.indexOf(node.nodeId) + 1, siblings.indexOf(node.nodeId) + 4)
+      .map((id) => ({ id, name: title(tree.getNode(id)) }));
+    const { note } = await notes.create({
+      userId: req.user._id,
+      requestKey: body.requestKey ?? null,
+      exam,
+      subject,
+      topic,
+      parentTopic: path.length > 1 ? { id: chapter.nodeId, name: title(chapter) } : null,
+      unitName: null,
+      language: body.language,
+      level: body.level,
+      sections,
+      content: checked,
+      model,
+      extra: { syllabusNodeId: node.nodeId, syllabusId: tree.syllabusId, syllabusPath: path.map((p) => p.nodeId), syllabusVersion: SYLLABUS_TREES_VERSION },
+    });
+    await notesQuota.record(req.user._id, { topicId: node.nodeId });
+    res.status(201).json(toPublicNote(note));
+  }
 
   const NotesQuery = z.object({
     category: Category,

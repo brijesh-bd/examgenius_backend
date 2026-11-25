@@ -51,6 +51,10 @@ export async function connectDb({ uri, db: dbName }) {
     collections.saved.createIndex({ userId: 1, savedAt: -1 }),
     collections.questionBank.createIndex({ topicId: 1, difficulty: 1, language: 1 }),
     collections.questionBank.createIndex({ fingerprint: 1 }, { unique: true }),
+    collections.questionBank.createIndex(
+      { nodeId: 1, difficulty: 1, language: 1 },
+      { partialFilterExpression: { nodeId: { $type: 'string' } } },
+    ),
     // Library. requestKey: a retried generate request never creates a 2nd set.
     collections.practiceSets.createIndex(
       { userId: 1, requestKey: 1 },
