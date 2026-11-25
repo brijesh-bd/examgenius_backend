@@ -1,0 +1,1619 @@
+{
+  "syllabusId": "railway_math",
+  "version": 1,
+  "generatedFrom": "src/data/railwayMath",
+  "counts": {
+    "chapters": 27,
+    "topics": 73,
+    "subtopics": 91,
+    "concepts": 313,
+    "questionPatterns": 890,
+    "byStatus": {
+      "VERIFIED_OFFICIAL": 0,
+      "VERIFIED_SUPPLEMENTARY": 25,
+      "NEEDS_REVIEW": 459,
+      "UNVERIFIED": 20
+    }
+  },
+  "exams": [
+    {
+      "examId": "rrb_ntpc",
+      "name": "RRB NTPC",
+      "chapters": [
+        {
+          "chapterId": "rm.number_system",
+          "title": "Number System",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.bodmas_simplification",
+          "title": "BODMAS and Simplification",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Adda247 (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.decimals_fractions",
+          "title": "Decimals and Fractions",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.lcm_hcf",
+          "title": "LCM and HCF",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.ratio_proportion",
+          "title": "Ratio and Proportion",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.percentage",
+          "title": "Percentage",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.average",
+          "title": "Average",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_ntpc"
+          ],
+          "notes": "Listed by Testbook (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.profit_loss",
+          "title": "Profit and Loss",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.interest",
+          "title": "Simple and Compound Interest",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_work",
+          "title": "Time and Work",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.pipes_cisterns",
+          "title": "Pipes and Cisterns",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Listed for Group D/ALP/JE but not in the retrieved lists for this exam; kept because questions of this type appear within listed chapters. Needs official confirmation."
+        },
+        {
+          "chapterId": "rm.time_speed_distance",
+          "title": "Time, Speed and Distance",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trains",
+          "title": "Problems on Trains",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_ntpc"
+          ],
+          "notes": "Listed by Testbook (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.boats_streams",
+          "title": "Boats and Streams",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_ntpc"
+          ],
+          "notes": "Listed by Testbook (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.ages",
+          "title": "Problems on Ages",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Listed for Group D/ALP/JE but not in the retrieved lists for this exam; kept because questions of this type appear within listed chapters. Needs official confirmation."
+        },
+        {
+          "chapterId": "rm.algebra",
+          "title": "Algebra",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.geometry",
+          "title": "Geometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_2d",
+          "title": "Mensuration — 2D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_3d",
+          "title": "Mensuration — 3D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trigonometry",
+          "title": "Trigonometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.statistics",
+          "title": "Elementary Statistics",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_ntpc_maths",
+            "testbook_ntpc",
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.data_interpretation",
+          "title": "Data Interpretation",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "adda247_ntpc_topics"
+          ],
+          "notes": "Listed by Adda247 (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.square_cube_root",
+          "title": "Square Root and Cube Root",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Listed for Group D/ALP/JE but not in the retrieved lists for this exam; kept because questions of this type appear within listed chapters. Needs official confirmation."
+        },
+        {
+          "chapterId": "rm.calendar_clock",
+          "title": "Calendar and Clock",
+          "applicable": false,
+          "status": null,
+          "sources": [],
+          "notes": "NTPC lists Calendar & Clock under General Intelligence & Reasoning, not Mathematics."
+        },
+        {
+          "chapterId": "rm.mixture_alligation",
+          "title": "Mixture and Alligation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        },
+        {
+          "chapterId": "rm.partnership",
+          "title": "Partnership",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_ntpc"
+          ],
+          "notes": "Listed by Testbook (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.approximation",
+          "title": "Approximation and Basic Calculation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        }
+      ]
+    },
+    {
+      "examId": "rrb_group_d",
+      "name": "RRB Group D",
+      "chapters": [
+        {
+          "chapterId": "rm.number_system",
+          "title": "Number System",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.bodmas_simplification",
+          "title": "BODMAS and Simplification",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.decimals_fractions",
+          "title": "Decimals and Fractions",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.lcm_hcf",
+          "title": "LCM and HCF",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.ratio_proportion",
+          "title": "Ratio and Proportion",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.percentage",
+          "title": "Percentage",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.average",
+          "title": "Average",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths"
+          ],
+          "notes": "Listed by Oliveboard (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.profit_loss",
+          "title": "Profit and Loss",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.interest",
+          "title": "Simple and Compound Interest",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_work",
+          "title": "Time and Work",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.pipes_cisterns",
+          "title": "Pipes and Cisterns",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_speed_distance",
+          "title": "Time, Speed and Distance",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trains",
+          "title": "Problems on Trains",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.boats_streams",
+          "title": "Boats and Streams",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.ages",
+          "title": "Problems on Ages",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.algebra",
+          "title": "Algebra",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.geometry",
+          "title": "Geometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_2d",
+          "title": "Mensuration — 2D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_3d",
+          "title": "Mensuration — 3D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trigonometry",
+          "title": "Trigonometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.statistics",
+          "title": "Elementary Statistics",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.data_interpretation",
+          "title": "Data Interpretation",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths"
+          ],
+          "notes": "Listed by Oliveboard (1 page). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.square_cube_root",
+          "title": "Square Root and Cube Root",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.calendar_clock",
+          "title": "Calendar and Clock",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "oliveboard_group_d_maths",
+            "testbook_group_d",
+            "adda247_group_d"
+          ],
+          "notes": "Listed by Oliveboard, Testbook, Adda247 (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mixture_alligation",
+          "title": "Mixture and Alligation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        },
+        {
+          "chapterId": "rm.partnership",
+          "title": "Partnership",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.approximation",
+          "title": "Approximation and Basic Calculation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        }
+      ]
+    },
+    {
+      "examId": "rrb_alp",
+      "name": "RRB ALP",
+      "chapters": [
+        {
+          "chapterId": "rm.number_system",
+          "title": "Number System",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.bodmas_simplification",
+          "title": "BODMAS and Simplification",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.decimals_fractions",
+          "title": "Decimals and Fractions",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.lcm_hcf",
+          "title": "LCM and HCF",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.ratio_proportion",
+          "title": "Ratio and Proportion",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.percentage",
+          "title": "Percentage",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.average",
+          "title": "Average",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.profit_loss",
+          "title": "Profit and Loss",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.interest",
+          "title": "Simple and Compound Interest",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_work",
+          "title": "Time and Work",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.pipes_cisterns",
+          "title": "Pipes and Cisterns",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_speed_distance",
+          "title": "Time, Speed and Distance",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trains",
+          "title": "Problems on Trains",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.boats_streams",
+          "title": "Boats and Streams",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.ages",
+          "title": "Problems on Ages",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.algebra",
+          "title": "Algebra",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.geometry",
+          "title": "Geometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_2d",
+          "title": "Mensuration — 2D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_3d",
+          "title": "Mensuration — 3D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trigonometry",
+          "title": "Trigonometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.statistics",
+          "title": "Elementary Statistics",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.data_interpretation",
+          "title": "Data Interpretation",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.square_cube_root",
+          "title": "Square Root and Cube Root",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.calendar_clock",
+          "title": "Calendar and Clock",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_alp",
+            "adda247_alp"
+          ],
+          "notes": "Listed by Testbook, Adda247 (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mixture_alligation",
+          "title": "Mixture and Alligation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        },
+        {
+          "chapterId": "rm.partnership",
+          "title": "Partnership",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.approximation",
+          "title": "Approximation and Basic Calculation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        }
+      ]
+    },
+    {
+      "examId": "rrb_je",
+      "name": "RRB JE",
+      "chapters": [
+        {
+          "chapterId": "rm.number_system",
+          "title": "Number System",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.bodmas_simplification",
+          "title": "BODMAS and Simplification",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.decimals_fractions",
+          "title": "Decimals and Fractions",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.lcm_hcf",
+          "title": "LCM and HCF",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.ratio_proportion",
+          "title": "Ratio and Proportion",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.percentage",
+          "title": "Percentage",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.average",
+          "title": "Average",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.profit_loss",
+          "title": "Profit and Loss",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.interest",
+          "title": "Simple and Compound Interest",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_work",
+          "title": "Time and Work",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.pipes_cisterns",
+          "title": "Pipes and Cisterns",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.time_speed_distance",
+          "title": "Time, Speed and Distance",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trains",
+          "title": "Problems on Trains",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.boats_streams",
+          "title": "Boats and Streams",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.ages",
+          "title": "Problems on Ages",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.algebra",
+          "title": "Algebra",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.geometry",
+          "title": "Geometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_2d",
+          "title": "Mensuration — 2D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mensuration_3d",
+          "title": "Mensuration — 3D",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.trigonometry",
+          "title": "Trigonometry",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.statistics",
+          "title": "Elementary Statistics",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.data_interpretation",
+          "title": "Data Interpretation",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.square_cube_root",
+          "title": "Square Root and Cube Root",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Adda247, Oliveboard (2 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.calendar_clock",
+          "title": "Calendar and Clock",
+          "applicable": true,
+          "status": "VERIFIED_SUPPLEMENTARY",
+          "sources": [
+            "testbook_je",
+            "adda247_je",
+            "oliveboard_je_maths"
+          ],
+          "notes": "Listed by Testbook, Adda247, Oliveboard (3 pages). Official notification text not retrieved."
+        },
+        {
+          "chapterId": "rm.mixture_alligation",
+          "title": "Mixture and Alligation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        },
+        {
+          "chapterId": "rm.partnership",
+          "title": "Partnership",
+          "applicable": true,
+          "status": "NEEDS_REVIEW",
+          "sources": [],
+          "notes": "Sub-area of a listed chapter; not named for this exam by any retrieved page."
+        },
+        {
+          "chapterId": "rm.approximation",
+          "title": "Approximation and Basic Calculation",
+          "applicable": true,
+          "status": "UNVERIFIED",
+          "sources": [],
+          "notes": "Not named by any retrieved source; offered as practice extension of a listed chapter."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "oliveboard_ntpc_maths",
+      "name": "Oliveboard",
+      "type": "supplementary",
+      "title": "RRB NTPC Maths Syllabus, Check Topics for CBT 1 and 2",
+      "url": "https://www.oliveboard.in/rrb-ntpc-maths-syllabus/",
+      "exams": [
+        "rrb_ntpc"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics"
+      ],
+      "note": "Graduate and Undergraduate share one list; other subtopics described as preparation extensions.",
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "testbook_ntpc",
+      "name": "Testbook",
+      "type": "supplementary",
+      "title": "RRB NTPC Syllabus 2026 for CBT 1 & 2, Download Syllabus PDF",
+      "url": "https://testbook.com/rrb-ntpc/syllabus-exam-pattern",
+      "exams": [
+        "rrb_ntpc"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "average",
+        "trains",
+        "boats_streams",
+        "partnership"
+      ],
+      "note": "Sub-rows mention Average, Relative Speeds, \"Boats, Trains, etc.\", Partnerships, Dishonest/Successive Dealings.",
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "adda247_ntpc_topics",
+      "name": "Adda247",
+      "type": "supplementary",
+      "title": "RRB NTPC 2026 Exam Important Topics, Check CBT 1 Subject-wise Topic List",
+      "url": "https://www.adda247.com/exams/railway/rrb-ntpc-2026-important-topics",
+      "exams": [
+        "rrb_ntpc"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "data_interpretation"
+      ],
+      "note": "Important-topics page (not a syllabus page); content obtained as a paraphrase only.",
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "oliveboard_group_d_maths",
+      "name": "Oliveboard",
+      "type": "supplementary",
+      "title": "RRB Group D Maths Syllabus 2026-27, Download PDF",
+      "url": "https://www.oliveboard.in/rrb-group-d-maths-syllabus/",
+      "exams": [
+        "rrb_group_d"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns",
+        "average",
+        "data_interpretation"
+      ],
+      "note": "Cites CEN 09/2025; overview table also adds Simplification, Average, Data Interpretation.",
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "testbook_group_d",
+      "name": "Testbook",
+      "type": "supplementary",
+      "title": "RRB Group D Syllabus 2026, Subject Wise Syllabus PDF Download",
+      "url": "https://testbook.com/rrb-group-d/syllabus",
+      "exams": [
+        "rrb_group_d"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "adda247_group_d",
+      "name": "Adda247",
+      "type": "supplementary",
+      "title": "RRB Group D Syllabus 2026, Check Subject Wise Syllabus Official PDF",
+      "url": "https://www.adda247.com/jobs/rrb-rrc-group-d-syllabus",
+      "exams": [
+        "rrb_group_d"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "testbook_alp",
+      "name": "Testbook",
+      "type": "supplementary",
+      "title": "RRB ALP Syllabus and Exam Pattern 2026, PDF Download (CBT 1, CBT 2, CBAT)",
+      "url": "https://testbook.com/rrb-alp/syllabus-exam-pattern",
+      "exams": [
+        "rrb_alp"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "adda247_alp",
+      "name": "Adda247",
+      "type": "supplementary",
+      "title": "RRB ALP Syllabus 2026, Exam Pattern (CBT 1, CBT 2, CBAT), Download PDF",
+      "url": "https://www.adda247.com/jobs/rrb-alp-syllabus",
+      "exams": [
+        "rrb_alp"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "testbook_je",
+      "name": "Testbook",
+      "type": "supplementary",
+      "title": "RRB JE Syllabus 2026 for CBT 1, 2 and Technical Abilities, PDF Download",
+      "url": "https://testbook.com/rrb-je/syllabus",
+      "exams": [
+        "rrb_je"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "note": "Square Root not shown on this page (conflict with Adda247 and Oliveboard JE pages).",
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "adda247_je",
+      "name": "Adda247",
+      "type": "supplementary",
+      "title": "RRB JE Syllabus 2026, CBT 1 & CBT 2 Exam Pattern, Subject-Wise Topics & PDF",
+      "url": "https://www.adda247.com/rrb-je/syllabus",
+      "exams": [
+        "rrb_je"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    },
+    {
+      "id": "oliveboard_je_maths",
+      "name": "Oliveboard",
+      "type": "supplementary",
+      "title": "RRB JE Maths Syllabus 2026, Check Topic Wise Syllabus",
+      "url": "https://www.oliveboard.in/blog/rrb-je-maths-syllabus/",
+      "exams": [
+        "rrb_je"
+      ],
+      "chapters": [
+        "number_system",
+        "decimals_fractions",
+        "lcm_hcf",
+        "ratio_proportion",
+        "percentage",
+        "mensuration_2d",
+        "mensuration_3d",
+        "time_work",
+        "time_speed_distance",
+        "interest",
+        "profit_loss",
+        "algebra",
+        "geometry",
+        "trigonometry",
+        "statistics",
+        "bodmas_simplification",
+        "square_cube_root",
+        "ages",
+        "calendar_clock",
+        "pipes_cisterns"
+      ],
+      "retrievedOn": "2026-11-25"
+    }
+  ],
+  "failedSources": [
+    {
+      "url": "https://www.rrb.iitk.ac.in/sathee-railway-exams/rrb-exams/rrb-ntpc/rrb-details/syllabus-of-exam",
+      "reason": "TLS certificate expired",
+      "triedOn": "2026-11-25"
+    },
+    {
+      "url": "https://sathee.iitk.ac.in/sathee-railway-exams/rrb-exams/rrb-group-d/rrb-details/syllabus-of-exam",
+      "reason": "Page rendered no content",
+      "triedOn": "2026-11-25"
+    },
+    {
+      "url": "https://www.rrbcdg.gov.in/",
+      "reason": "TLS certificate hostname mismatch",
+      "triedOn": "2026-11-25"
+    },
+    {
+      "url": "https://www.rrbchennai.gov.in/",
+      "reason": "TLS hostname mismatch; rrb.indianrailways.gov.in/chennai lists CEN endpoints that were not opened",
+      "triedOn": "2026-11-25"
+    },
+    {
+      "url": "(official CEN notification PDFs)",
+      "reason": "Not found/opened — no official text available for verification",
+      "triedOn": "2026-11-25"
+    }
+  ],
+  "conflicts": [
+    "RRB JE: Testbook omits Square Root; Adda247 and Oliveboard include it (kept, VERIFIED_SUPPLEMENTARY).",
+    "Oliveboard Group D page headline cites CEN 08/2024 while the body cites CEN 09/2025.",
+    "Adda247 NTPC page is an \"important topics\" list (includes Data Interpretation and Simplification) rather than a syllabus.",
+    "Calendar & Clock: Mathematics for Group D/ALP/JE, Reasoning for NTPC (excluded from NTPC Mathematics)."
+  ],
+  "duplicateTitles": [
+    [
+      "rm.lcm_hcf.applications",
+      "rm.percentage.applications"
+    ],
+    [
+      "rm.profit_loss.special",
+      "rm.pipes_cisterns.special"
+    ],
+    [
+      "rm.geometry.quadrilaterals.quads.trapezium_props",
+      "rm.mensuration_2d.rectilinear.quads_area.trapezium"
+    ]
+  ],
+  "problems": [],
+  "limitations": [
+    "No official RRB CEN notification text was retrieved; no node is VERIFIED_OFFICIAL.",
+    "Topic/subtopic/concept levels are an editorial breakdown (NEEDS_REVIEW), not taken from a source list.",
+    "Question patterns are English only (used in AI prompts); node titles are bilingual.",
+    "Exams not in the app catalogue (RRB Technician, RPF, NTPC UG/Graduate split) are not mapped."
+  ]
+}
