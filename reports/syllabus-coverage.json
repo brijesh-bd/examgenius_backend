@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-25T07:01:56.918Z",
+  "generatedAt": "2026-11-25T10:24:13.484Z",
   "coverage": [
     {
       "examId": "rrb_ntpc",
@@ -13,6 +13,7 @@
           "concepts": 306,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 21,
             "draft": 471
           }
@@ -25,6 +26,7 @@
           "concepts": 146,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 15,
             "draft": 224
           }
@@ -37,6 +39,7 @@
           "concepts": 99,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 9,
             "draft": 148
           }
@@ -55,6 +58,7 @@
           "concepts": 313,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 22,
             "draft": 482
           }
@@ -67,6 +71,7 @@
           "concepts": 148,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 17,
             "draft": 226
           }
@@ -79,6 +84,7 @@
           "concepts": 95,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 5,
             "draft": 144
           }
@@ -91,6 +97,7 @@
           "concepts": 77,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 3,
             "draft": 111
           }
@@ -109,6 +116,7 @@
           "concepts": 313,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 20,
             "draft": 484
           }
@@ -121,6 +129,7 @@
           "concepts": 146,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 17,
             "draft": 221
           }
@@ -133,6 +142,7 @@
           "concepts": 77,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 3,
             "draft": 111
           }
@@ -151,6 +161,7 @@
           "concepts": 313,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 20,
             "draft": 484
           }
@@ -163,6 +174,7 @@
           "concepts": 146,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 17,
             "draft": 221
           }
@@ -175,6 +187,7 @@
           "concepts": 95,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 8,
             "draft": 141
           }
@@ -187,6 +200,7 @@
           "concepts": 77,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 3,
             "draft": 111
           }
@@ -205,6 +219,7 @@
           "concepts": 313,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 0,
             "draft": 504
           }
@@ -217,6 +232,7 @@
           "concepts": 146,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 17,
             "draft": 221
           }
@@ -229,8 +245,54 @@
           "concepts": 95,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 8,
             "draft": 141
+          }
+        }
+      ]
+    },
+    {
+      "examId": "rrb_station_master",
+      "difficulty": "medium",
+      "subjects": [
+        {
+          "subjectId": "sm_science_math",
+          "chapters": 2,
+          "topics": 6,
+          "subtopics": 0,
+          "concepts": 30,
+          "status": {
+            "official": 38,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "sm_logical",
+          "chapters": 2,
+          "topics": 0,
+          "subtopics": 0,
+          "concepts": 11,
+          "status": {
+            "official": 13,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "sm_mental",
+          "chapters": 4,
+          "topics": 0,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 4,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
           }
         }
       ]
@@ -247,6 +309,7 @@
           "concepts": 313,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 0,
             "draft": 504
           }
@@ -259,6 +322,7 @@
           "concepts": 146,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 17,
             "draft": 221
           }
@@ -271,6 +335,7 @@
           "concepts": 43,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 5,
             "draft": 61
           }
@@ -283,14 +348,655 @@
           "concepts": 18,
           "status": {
             "official": 0,
+            "supplementary": 0,
             "unverified": 1,
             "draft": 25
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_cgl",
+      "difficulty": "hard",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 7,
+          "topics": 31,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 38,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 29,
+          "topics": 10,
+          "subtopics": 0,
+          "concepts": 18,
+          "status": {
+            "official": 29,
+            "supplementary": 28,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 18,
+            "supplementary": 32,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "computer",
+          "chapters": 4,
+          "topics": 0,
+          "subtopics": 0,
+          "concepts": 19,
+          "status": {
+            "official": 23,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "statistics",
+          "chapters": 12,
+          "topics": 0,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 12,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "finance_economics",
+          "chapters": 2,
+          "topics": 12,
+          "subtopics": 0,
+          "concepts": 7,
+          "status": {
+            "official": 21,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_chsl",
+      "difficulty": "medium",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 7,
+          "topics": 30,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 37,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 18,
+          "topics": 9,
+          "subtopics": 0,
+          "concepts": 17,
+          "status": {
+            "official": 18,
+            "supplementary": 26,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 18,
+            "supplementary": 32,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "computer",
+          "chapters": 4,
+          "topics": 0,
+          "subtopics": 0,
+          "concepts": 19,
+          "status": {
+            "official": 23,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_mts",
+      "difficulty": "easy",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 6,
+          "topics": 23,
+          "subtopics": 20,
+          "concepts": 81,
+          "status": {
+            "official": 7,
+            "supplementary": 123,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 5,
+          "topics": 18,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 23,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 10,
+          "topics": 6,
+          "subtopics": 0,
+          "concepts": 10,
+          "status": {
+            "official": 10,
+            "supplementary": 16,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 8,
+            "supplementary": 42,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_gd",
+      "difficulty": "easy",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 9,
+            "supplementary": 148,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 3,
+          "topics": 16,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 16,
+            "supplementary": 3,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 8,
+          "topics": 9,
+          "subtopics": 0,
+          "concepts": 17,
+          "status": {
+            "official": 8,
+            "supplementary": 26,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 2,
+            "supplementary": 48,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_cpo",
+      "difficulty": "hard",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 7,
+          "topics": 28,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 35,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 29,
+          "topics": 10,
+          "subtopics": 0,
+          "concepts": 18,
+          "status": {
+            "official": 29,
+            "supplementary": 28,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 12,
+            "supplementary": 38,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_je",
+      "difficulty": "medium",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 9,
+          "topics": 6,
+          "subtopics": 0,
+          "concepts": 13,
+          "status": {
+            "official": 9,
+            "supplementary": 19,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "je_civil",
+          "chapters": 13,
+          "topics": 54,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 67,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "je_electrical",
+          "chapters": 11,
+          "topics": 29,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 40,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "je_mechanical",
+          "chapters": 11,
+          "topics": 41,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 52,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_steno",
+      "difficulty": "medium",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 9,
+            "supplementary": 148,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 9,
+          "topics": 6,
+          "subtopics": 0,
+          "concepts": 13,
+          "status": {
+            "official": 9,
+            "supplementary": 19,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 6,
+            "supplementary": 44,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_sp_matric",
+      "difficulty": "easy",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 9,
+            "supplementary": 148,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 4,
+          "topics": 17,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 18,
+            "supplementary": 3,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 6,
+          "topics": 3,
+          "subtopics": 0,
+          "concepts": 7,
+          "status": {
+            "official": 6,
+            "supplementary": 10,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 6,
+            "supplementary": 44,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_sp_hsc",
+      "difficulty": "medium",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 7,
+          "topics": 29,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 36,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 18,
+          "topics": 9,
+          "subtopics": 0,
+          "concepts": 17,
+          "status": {
+            "official": 18,
+            "supplementary": 26,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 18,
+            "supplementary": 32,
+            "unverified": 0,
+            "draft": 0
+          }
+        }
+      ]
+    },
+    {
+      "examId": "ssc_sp_grad",
+      "difficulty": "hard",
+      "subjects": [
+        {
+          "subjectId": "general_awareness",
+          "chapters": 9,
+          "topics": 29,
+          "subtopics": 20,
+          "concepts": 99,
+          "status": {
+            "official": 8,
+            "supplementary": 149,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "quant",
+          "chapters": 7,
+          "topics": 28,
+          "subtopics": 0,
+          "concepts": 0,
+          "status": {
+            "official": 35,
+            "supplementary": 0,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "reasoning",
+          "chapters": 29,
+          "topics": 10,
+          "subtopics": 0,
+          "concepts": 18,
+          "status": {
+            "official": 29,
+            "supplementary": 28,
+            "unverified": 0,
+            "draft": 0
+          }
+        },
+        {
+          "subjectId": "english",
+          "chapters": 4,
+          "topics": 15,
+          "subtopics": 0,
+          "concepts": 31,
+          "status": {
+            "official": 8,
+            "supplementary": 42,
+            "unverified": 0,
+            "draft": 0
           }
         }
       ]
     }
   ],
   "sources": {
+    "cen_08_2026": {
+      "name": "RRB",
+      "type": "official",
+      "title": "Centralised Employment Notice (CEN) No. 08/2026 — Station Master",
+      "file": "sources/cen/examsDocuments.pdf",
+      "ref": "para 15.1 Computer Based Test (CBT), Syllabus For CBT (page 21)",
+      "checkedOn": "2026-11-25"
+    },
     "adda247_ntpc": {
       "name": "Adda247",
       "type": "coaching",

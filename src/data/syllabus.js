@@ -1,4 +1,6 @@
 // Mirrors the Flutter app's syllabus (lib/features/question_generator/data).
+import { JE_CIVIL, JE_ELECTRICAL, JE_MECHANICAL } from './syllabusTrees/sscJe.js';
+import { SSC_FINANCE_ECONOMICS, SSC_STATISTICS } from './syllabusTrees/sscLibraries.js';
 
 /**
  * Bump when topics or units change (ids must stay stable: practice, the
@@ -190,6 +192,25 @@ const _technicalJe = _subject('technical', 'Technical Abilities', {
 });
 
 const _sscStandard = [_quantSsc, _reasoningGeneral, _english, _generalAwareness];
+
+/** Flat topics (= chapters) of a concept library, for subjects that exist only as trees. */
+const _fromLibrary = (id, name, text) =>
+  _subject(
+    id,
+    name,
+    Object.fromEntries(
+      text
+        .split('\n')
+        .filter((l) => l.startsWith('C '))
+        .map((l) => l.slice(2).split('|').map((x) => x.trim()))
+        .map(([slug, title]) => [slug, title]),
+    ),
+  );
+const _jeCivil = _fromLibrary('je_civil', 'General Engineering (Civil & Structural)', JE_CIVIL);
+const _jeElectrical = _fromLibrary('je_electrical', 'General Engineering (Electrical)', JE_ELECTRICAL);
+const _jeMechanical = _fromLibrary('je_mechanical', 'General Engineering (Mechanical)', JE_MECHANICAL);
+const _statistics = _fromLibrary('statistics', 'Statistics (Paper-II, JSO)', SSC_STATISTICS);
+const _financeEconomics = _fromLibrary('finance_economics', 'General Studies — Finance & Economics (Paper-III, AAO)', SSC_FINANCE_ECONOMICS);
 const _sscBasic = [_reasoningGeneral, _generalAwareness, _quantBasic, _english];
 const _bankStandard = [_reasoningBanking, _quantBanking, _english, _bankingAwareness, _computer];
 
@@ -202,11 +223,33 @@ export const examSubjects = {
   'rrb_je': [_quantRailway, _reasoningGeneral, _generalAwareness, _generalScience, _technicalJe],
   'rrb_tech_gr1_signal': [_quantRailway, _reasoningGeneral, _generalAwareness],
   'rrb_tech_gr3': [_quantRailway, _reasoningGeneral, _generalAwareness, _generalScience],
-  'ssc_cgl': [..._sscStandard, _computer],
+  // CEN 08/2026 sections (concept trees in syllabusTrees/stationMaster.js).
+  'rrb_station_master': [
+    _subject('sm_science_math', 'Basic Science, Mathematical and Analytical Capability', {
+      'basic_science_math': 'Basic Science & Mathematics',
+      'data_analysis': 'Data Analysis & Interpretation',
+    }),
+    _subject('sm_logical', 'Logical Capability', {
+      'logical_reasoning': 'Logical Reasoning',
+      'reading_comprehension': 'Reading Comprehension (English)',
+    }),
+    _subject('sm_mental', 'Mental Reasoning', {
+      'analogy': 'Analogy',
+      'series_completion': 'Series Completion',
+      'coding_decoding': 'Coding-Decoding',
+      'ranking_arrangement': 'Ranking and Arrangements',
+    }),
+  ],
+  'ssc_cgl': [..._sscStandard, _computer, _statistics, _financeEconomics],
   'ssc_chsl': [..._sscStandard, _computer],
   'ssc_mts': _sscBasic,
   'ssc_gd': _sscBasic,
   'ssc_cpo': _sscStandard,
+  'ssc_je': [_reasoningGeneral, _generalAwareness, _jeCivil, _jeElectrical, _jeMechanical],
+  'ssc_steno': [_reasoningGeneral, _generalAwareness, _english],
+  'ssc_sp_matric': [_reasoningGeneral, _generalAwareness, _quantBasic, _english],
+  'ssc_sp_hsc': [_reasoningGeneral, _generalAwareness, _quantSsc, _english],
+  'ssc_sp_grad': [_reasoningGeneral, _generalAwareness, _quantSsc, _english],
   'ibps_po': _bankStandard,
   'ibps_clerk': _bankStandard,
   'ibps_rrb_po': _bankStandard,

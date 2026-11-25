@@ -10,6 +10,7 @@ export const examCatalog = [
       {'id': 'rrb_je', 'name': 'RRB JE', 'categoryId': 'railway'},
       {'id': 'rrb_tech_gr1_signal', 'name': 'RRB Technician Grade I Signal', 'categoryId': 'railway'},
       {'id': 'rrb_tech_gr3', 'name': 'RRB Technician Grade III', 'categoryId': 'railway'},
+      {'id': 'rrb_station_master', 'name': 'RRB Station Master', 'categoryId': 'railway'},
     ],
   },
   {
@@ -21,6 +22,11 @@ export const examCatalog = [
       {'id': 'ssc_mts', 'name': 'SSC MTS', 'categoryId': 'ssc'},
       {'id': 'ssc_gd', 'name': 'SSC GD', 'categoryId': 'ssc'},
       {'id': 'ssc_cpo', 'name': 'SSC CPO', 'categoryId': 'ssc'},
+      {'id': 'ssc_je', 'name': 'SSC JE (Civil, Electrical, Mechanical)', 'categoryId': 'ssc'},
+      {'id': 'ssc_steno', 'name': "SSC Stenographer Grade 'C' & 'D'", 'categoryId': 'ssc'},
+      {'id': 'ssc_sp_matric', 'name': 'SSC Selection Post (Matriculation)', 'categoryId': 'ssc'},
+      {'id': 'ssc_sp_hsc', 'name': 'SSC Selection Post (Higher Secondary)', 'categoryId': 'ssc'},
+      {'id': 'ssc_sp_grad', 'name': 'SSC Selection Post (Graduation)', 'categoryId': 'ssc'},
     ],
   },
   {

@@ -9,6 +9,8 @@
  * `topics` (optional) restricts a chapter to some of its topics for this exam.
  * `difficulty` is the exam's automatic practice level (no student selector).
  */
+import { SM_MAPPING } from './stationMaster.js';
+
 const U = (sources, extra = {}) => ({ status: 'unverified', sources, ...extra });
 const D = (extra = {}) => ({ status: 'draft', sources: [], ...extra });
 
@@ -138,6 +140,11 @@ export const EXAM_SYLLABUS = {
       },
     },
   },
+  // CEN 08/2026 (sources/cen/examsDocuments.pdf): the CEN's own CBT sections.
+  rrb_station_master: {
+    difficulty: 'medium',
+    subjects: { ...SM_MAPPING },
+  },
   rrb_tech_gr3: {
     difficulty: 'easy',
     subjects: {
@@ -170,6 +177,14 @@ export const SUBJECT_NAMES = {
 
 /** Retrieved coaching pages (2026-11-25). Official CEN PDFs: none yet. */
 export const TREE_SOURCES = {
+  cen_08_2026: {
+    name: 'RRB',
+    type: 'official',
+    title: 'Centralised Employment Notice (CEN) No. 08/2026 — Station Master',
+    file: 'sources/cen/examsDocuments.pdf',
+    ref: 'para 15.1 Computer Based Test (CBT), Syllabus For CBT (page 21)',
+    checkedOn: '2026-11-25',
+  },
   adda247_ntpc: { name: 'Adda247', type: 'coaching', url: 'https://www.adda247.com/jobs/rrb-ntpc-syllabus', title: 'RRB NTPC Syllabus 2026 (Graduate and Undergraduate)' },
   testbook_ntpc: { name: 'Testbook', type: 'coaching', url: 'https://testbook.com/rrb-ntpc/syllabus', title: 'RRB NTPC Syllabus 2026 for CBT 1 & 2', cen: 'CEN 06/2026, 07/2026 (as cited by the page)' },
   adda247_group_d: { name: 'Adda247', type: 'coaching', url: 'https://www.adda247.com/jobs/rrb-group-d-syllabus', title: 'RRB Group D Syllabus 2026' },

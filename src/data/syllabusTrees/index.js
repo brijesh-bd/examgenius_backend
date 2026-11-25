@@ -4,6 +4,11 @@ import { EXAM_SYLLABUS, SUBJECT_NAMES, TREE_SOURCES } from './exams.js';
 import { REASONING } from './reasoning.js';
 import { GENERAL_AWARENESS } from './generalAwareness.js';
 import { GENERAL_SCIENCE } from './generalScience.js';
+import { SM_LOGICAL, SM_MENTAL, SM_SCIENCE_MATH } from './stationMaster.js';
+import { ENGLISH } from './english.js';
+import { SSC_COMPUTER, SSC_FINANCE_ECONOMICS, SSC_QUANT, SSC_REASONING, SSC_STATISTICS } from './sscLibraries.js';
+import { JE_CIVIL, JE_ELECTRICAL, JE_MECHANICAL } from './sscJe.js';
+import { SSC_EXAM_SYLLABUS, SSC_SCHEMES, SSC_SOURCES } from './sscExams.js';
 
 /**
  * Registry of hierarchical syllabi: (examId, subjectId) → tree.
@@ -13,16 +18,22 @@ import { GENERAL_SCIENCE } from './generalScience.js';
  * adapter; its per-exam mapping is deferred.
  */
 
-const mappingFor = (subjectId) =>
+/** Railway and SSC mappings are kept apart; a library is mapped only from the sets given. */
+const RAILWAY = EXAM_SYLLABUS;
+const SSC = SSC_EXAM_SYLLABUS;
+const ALL_EXAMS = { ...RAILWAY, ...SSC };
+const mappingFor = (subjectId, sets) =>
   Object.fromEntries(
-    Object.entries(EXAM_SYLLABUS)
-      .filter(([, e]) => e.subjects[subjectId] && typeof e.subjects[subjectId] === 'object')
-      .map(([examId, e]) => [examId, e.subjects[subjectId]]),
+    sets.flatMap((set) =>
+      Object.entries(set)
+        .filter(([, e]) => e.subjects[subjectId] && typeof e.subjects[subjectId] === 'object')
+        .map(([examId, e]) => [examId, e.subjects[subjectId]]),
+    ),
   );
-const difficulty = Object.fromEntries(Object.entries(EXAM_SYLLABUS).map(([id, e]) => [id, e.difficulty]));
+const difficulty = Object.fromEntries(Object.entries(ALL_EXAMS).map(([id, e]) => [id, e.difficulty]));
 
-const make = (syllabusId, prefix, subjectId, text) =>
-  new TreeSyllabus({ syllabusId, prefix, subjectId, text, mapping: mappingFor(subjectId), difficulty });
+const make = (syllabusId, prefix, subjectId, text, sets = [RAILWAY]) =>
+  new TreeSyllabus({ syllabusId, prefix, subjectId, text, mapping: mappingFor(subjectId, sets), difficulty });
 
 /** Railway Mathematics behind the same interface. */
 class MathAdapter {
@@ -33,7 +44,7 @@ class MathAdapter {
     return math.NODES;
   }
   examIds() {
-    return Object.keys(EXAM_SYLLABUS).filter((e) => EXAM_SYLLABUS[e].subjects.quant && math.isRailwayExam(e));
+    return Object.keys(RAILWAY).filter((e) => RAILWAY[e].subjects.quant === 'railway_math' && math.isRailwayExam(e));
   }
   hasExam(examId) {
     return this.examIds().includes(examId);
@@ -94,7 +105,7 @@ class MathAdapter {
     return math.validateHierarchy();
   }
   counts(examId) {
-    const c = { chapters: 0, topics: 0, subtopics: 0, concepts: 0, status: { official: 0, unverified: 0, draft: 0 } };
+    const c = { chapters: 0, topics: 0, subtopics: 0, concepts: 0, status: { official: 0, supplementary: 0, unverified: 0, draft: 0 } };
     for (const n of math.NODES.values()) {
       if (!this.isApplicable(examId, n.nodeId)) continue;
       c[{ chapter: 'chapters', topic: 'topics', subtopic: 'subtopics', concept: 'concepts' }[n.nodeType]]++;
@@ -107,21 +118,41 @@ class MathAdapter {
 export const SYLLABI = [
   new MathAdapter(),
   make('railway_reasoning', 'rr', 'reasoning', REASONING),
-  make('railway_general_awareness', 'ga', 'general_awareness', GENERAL_AWARENESS),
+  // Shared library; Railway and SSC exams each keep their own mapping.
+  // (syllabusId kept from v1 so database ids stay stable.)
+  make('railway_general_awareness', 'ga', 'general_awareness', GENERAL_AWARENESS, [RAILWAY, SSC]),
   make('railway_general_science', 'gs', 'general_science', GENERAL_SCIENCE),
+  // Station Master (CEN 08/2026): the CEN's own sections, verbatim.
+  make('station_master_science_math', 'smb', 'sm_science_math', SM_SCIENCE_MATH),
+  make('station_master_logical', 'sml', 'sm_logical', SM_LOGICAL),
+  make('station_master_mental', 'smr', 'sm_mental', SM_MENTAL),
+  // SSC (official SSC notices; see sscExams.js).
+  make('ssc_quant', 'sq', 'quant', SSC_QUANT, [SSC]),
+  make('ssc_reasoning', 'sr', 'reasoning', SSC_REASONING, [SSC]),
+  make('english', 'en', 'english', ENGLISH, [SSC]),
+  make('ssc_computer', 'ck', 'computer', SSC_COMPUTER, [SSC]),
+  make('ssc_statistics', 'st', 'statistics', SSC_STATISTICS, [SSC]),
+  make('ssc_finance_economics', 'fe', 'finance_economics', SSC_FINANCE_ECONOMICS, [SSC]),
+  make('ssc_je_civil', 'jc', 'je_civil', JE_CIVIL, [SSC]),
+  make('ssc_je_electrical', 'jl', 'je_electrical', JE_ELECTRICAL, [SSC]),
+  make('ssc_je_mechanical', 'jm', 'je_mechanical', JE_MECHANICAL, [SSC]),
 ];
 
-export { SUBJECT_NAMES, TREE_SOURCES, EXAM_SYLLABUS };
+export { SUBJECT_NAMES, TREE_SOURCES, EXAM_SYLLABUS, SSC_EXAM_SYLLABUS, SSC_SOURCES, SSC_SCHEMES };
 
 /** The tree of one exam's subject, or null when it has none. */
 export function syllabusFor(examId, subjectId) {
   return SYLLABI.find((s) => s.subjectId === subjectId && s.hasExam(examId)) ?? null;
 }
 
-/** Tree for a node id (by prefix). */
-export function syllabusOfNode(nodeId) {
+/**
+ * Tree for a node id (by prefix). Two trees can share a library (e.g. the
+ * Mathematics outline for Railway and SSC), so pass the exam when known.
+ */
+export function syllabusOfNode(nodeId, examId = null) {
   const prefix = String(nodeId).split('.')[0];
-  return SYLLABI.find((s) => s.prefix === prefix) ?? null;
+  const all = SYLLABI.filter((s) => s.prefix === prefix);
+  return (examId && all.find((s) => s.hasExam(examId))) || all[0] || null;
 }
 
 export const hasTrees = (examId) => SYLLABI.some((s) => s.hasExam(examId));
@@ -136,7 +167,7 @@ export function validateAll() {
 
 /** Per exam × subject counts (coverage report). */
 export function coverageReport() {
-  return Object.keys(EXAM_SYLLABUS).map((examId) => ({
+  return Object.keys(ALL_EXAMS).map((examId) => ({
     examId,
     difficulty: difficulty[examId],
     subjects: SYLLABI.filter((s) => s.hasExam(examId)).map((s) => ({ subjectId: s.subjectId, ...s.counts(examId) })),

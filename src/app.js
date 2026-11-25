@@ -24,7 +24,7 @@ import { findManifest, manifestReport } from './data/manifests/index.js';
 import { MODE_GUIDE, blocksFor, templateFor } from './data/contentTemplates.js';
 import { LimitError } from './services/subscription.js';
 import { examCatalog } from './data/examCatalog.js';
-import { examTreeSubjects, syllabusFor, syllabusOfNode } from './data/syllabusTrees/index.js';
+import { SSC_SCHEMES, examTreeSubjects, syllabusFor, syllabusOfNode } from './data/syllabusTrees/index.js';
 
 /** Bump when a syllabus tree changes in a way clients should refetch. */
 const SYLLABUS_TREES_VERSION = 2;
@@ -208,7 +208,8 @@ export function createApp({
     difficulty: tree.difficulty(exam.id),
     hasOfficial: [...tree.nodes.keys()].some((id) => tree.status(exam.id, id) === 'official'),
   });
-  const NodeIdParam = z.string().regex(/^[a-z]{2}(\.[a-z0-9_]+){1,4}$/, 'Invalid node id');
+  const RAILWAY_MATH = Symbol('railway-math');
+  const NodeIdParam = z.string().regex(/^[a-z]{2,3}(\.[a-z0-9_]+){1,4}$/, 'Invalid node id');
   const SubjectParam = z.string().regex(/^[a-z_]{2,40}$/, 'Invalid subject');
 
   // Subjects of an exam, and which of them have a concept tree.
@@ -231,15 +232,21 @@ export function createApp({
     });
   });
 
+  /** Old /syllabus/railway/:examId/math/* paths serve only the Railway Mathematics tree. */
+  const railwayMathOf = (examId) => {
+    const r = treeOf(examId, 'quant');
+    if (r.tree.prefix !== 'rm') throw httpError(404, 'This exam has no Railway Mathematics syllabus');
+    return r;
+  };
   const sendTree = (req, res, examId, subjectId) => {
-    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { exam, tree } = subjectId === RAILWAY_MATH ? railwayMathOf(examId) : treeOf(examId, SubjectParam.parse(subjectId));
     const { nodeId } = z.object({ nodeId: NodeIdParam.optional() }).parse(req.query);
     const nodes = tree.tree(exam.id, nodeId ?? null);
     if (!nodes) throw httpError(404, 'Node not found in this exam');
     res.json({ ...treeBase(exam, tree), nodes });
   };
   const sendChildren = (req, res, examId, subjectId) => {
-    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { exam, tree } = subjectId === RAILWAY_MATH ? railwayMathOf(examId) : treeOf(examId, SubjectParam.parse(subjectId));
     const nodeId = NodeIdParam.parse(req.params.nodeId);
     if (!tree.isApplicable(exam.id, nodeId)) throw httpError(404, 'Node not found in this exam');
     res.json({
@@ -249,14 +256,14 @@ export function createApp({
     });
   };
   const sendSearch = (req, res, examId, subjectId) => {
-    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { exam, tree } = subjectId === RAILWAY_MATH ? railwayMathOf(examId) : treeOf(examId, SubjectParam.parse(subjectId));
     const q = z
       .object({ q: z.string().trim().min(1).max(60), limit: z.coerce.number().int().min(1).max(50).default(20) })
       .parse(req.query);
     res.json({ ...treeBase(exam, tree), query: q.q, results: tree.search(exam.id, q.q, { limit: q.limit }) });
   };
   const sendResolve = (req, res, examId, subjectId) => {
-    const { exam, tree } = treeOf(examId, SubjectParam.parse(subjectId));
+    const { exam, tree } = subjectId === RAILWAY_MATH ? railwayMathOf(examId) : treeOf(examId, SubjectParam.parse(subjectId));
     const { nodeIds } = z.object({ nodeIds: z.array(z.string().max(120)).min(1).max(400) }).parse(req.body);
     const r = tree.resolve(exam.id, nodeIds);
     if (r.invalid.length) throw Object.assign(httpError(400, 'Unknown syllabus nodes', 'INVALID_NODES'), { details: { invalid: r.invalid } });
@@ -273,15 +280,15 @@ export function createApp({
     });
   });
   api.get('/syllabus/railway/:examId/math', (req, res) => {
-    const { exam, tree } = treeOf(req.params.examId, 'quant');
+    const { exam, tree } = railwayMathOf(req.params.examId);
     res.json({ ...treeBase(exam, tree), chapters: tree.chapters(exam.id).map((n) => tree.publicNode(exam.id, n)) });
   });
-  api.get('/syllabus/railway/:examId/math/nodes/:nodeId/children', (req, res) => sendChildren(req, res, req.params.examId, 'quant'));
-  api.get('/syllabus/railway/:examId/math/tree', (req, res) => sendTree(req, res, req.params.examId, 'quant'));
-  api.get('/syllabus/railway/:examId/math/search', (req, res) => sendSearch(req, res, req.params.examId, 'quant'));
-  api.post('/syllabus/railway/:examId/math/resolve', (req, res) => sendResolve(req, res, req.params.examId, 'quant'));
+  api.get('/syllabus/railway/:examId/math/nodes/:nodeId/children', (req, res) => sendChildren(req, res, req.params.examId, RAILWAY_MATH));
+  api.get('/syllabus/railway/:examId/math/tree', (req, res) => sendTree(req, res, req.params.examId, RAILWAY_MATH));
+  api.get('/syllabus/railway/:examId/math/search', (req, res) => sendSearch(req, res, req.params.examId, RAILWAY_MATH));
+  api.post('/syllabus/railway/:examId/math/resolve', (req, res) => sendResolve(req, res, req.params.examId, RAILWAY_MATH));
   api.get('/syllabus/railway/:examId/math/applicability', (req, res) => {
-    const { exam, tree } = treeOf(req.params.examId, 'quant');
+    const { exam, tree } = railwayMathOf(req.params.examId);
     res.json({
       ...treeBase(exam, tree),
       chapters: [...tree.nodes.values()]
@@ -359,7 +366,7 @@ export function createApp({
    * chapters sharing a practice topic are merged. One subject per request.
    */
   function conceptTopics(exam, nodeIds, language = 'en', subjectId = null) {
-    const subject = subjectId ?? syllabusOfNode(nodeIds[0])?.subjectId;
+    const subject = subjectId ?? syllabusOfNode(nodeIds[0], exam.id)?.subjectId;
     const tree = subject ? syllabusFor(exam.id, subject) : null;
     if (!tree) throw httpError(400, `${exam.name} has no concept-level syllabus for this subject`, 'INVALID_NODES');
     const r = tree.resolve(exam.id, nodeIds);
@@ -573,7 +580,8 @@ export function createApp({
         bankCount = questions.length;
       } else {
         const generated = await questionGenerator.generate({
-          exam,
+          // Paper/tier pattern from the official notice, when known (SSC).
+          exam: SSC_SCHEMES[exam.id] ? { ...exam, scheme: SSC_SCHEMES[exam.id] } : exam,
           topics,
           difficulty: difficulty,
           count: body.count,
@@ -925,7 +933,7 @@ export function createApp({
    * an overview). Same node ids as practice; nothing is kept in a second tree.
    */
   async function conceptNotes(req, res, exam, body) {
-    const tree = syllabusOfNode(body.nodeId);
+    const tree = syllabusOfNode(body.nodeId, exam.id);
     if (!tree || !tree.hasExam(exam.id) || !tree.isApplicable(exam.id, body.nodeId)) {
       throw httpError(400, `${body.nodeId} is not in the ${exam.name} syllabus`, 'INVALID_NODES');
     }

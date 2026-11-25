@@ -102,7 +102,7 @@ test('exam applicability follows the evidence', () => {
   for (const e of RAILWAY_EXAM_IDS) assert.equal(isApplicable(e, 'rm.percentage'), true);
   assert.equal(examChapters('ssc_cgl'), null);
   // Database mapping: one document per exam × included node, unique.
-  const maps = mappingDocuments().filter((m) => m.subjectId === 'quant');
+  const maps = mappingDocuments().filter((m) => m.subjectId === 'quant' && m.examId.startsWith('rrb_'));
   assert.equal(new Set(maps.map((m) => m._id)).size, maps.length);
   assert.ok(!maps.some((m) => m.examId === 'rrb_ntpc' && m.nodeId.startsWith('rm.calendar_clock')));
   assert.ok(maps.every((m) => ['official', 'unverified', 'draft'].includes(m.status) && m.status !== 'official'));

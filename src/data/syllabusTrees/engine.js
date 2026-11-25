@@ -6,17 +6,21 @@ import { topicIndex } from '../../services/examService.js';
  * no subject has its own code or UI.
  *
  * Library format, one node per line (depth from the tag; any node may be a leaf):
- *   C slug | English | Hindi | legacyTopicId|-     chapter
- *   T slug | English | Hindi [| fig]               topic
- *   S slug | English | Hindi [| fig]               subtopic
- *   M slug | English | Hindi [| fig]               micro-concept
+ *   C slug | English | Hindi | legacyTopicId|- [| fig]   chapter
+ *   T slug | English | Hindi [| fig | patterns]    topic
+ *   S slug | English | Hindi [| fig | patterns]    subtopic
+ *   M slug | English | Hindi [| fig | patterns]    micro-concept
+ * patterns = "pattern; pattern; …" (question patterns; children inherit them).
  * Ids = `<prefix>.<slug path>` (stable). `fig` = needs a figure → hidden
  * (text-MCQ practice only).
  *
- * Mapping: examId → { chapterSlug: { status, sources, topics?, note? } }.
+ * Mapping: examId → { chapterSlug: { status, sources, topics?, verifiedTopics?,
+ *   childStatus?, verifiedAll?, note? } }. Below a chapter, a topic listed in
+ *   verifiedTopics is 'official' (named by the notification); every other node
+ *   gets childStatus (default 'draft'), e.g. 'supplementary' practice detail.
  * A node belongs to an exam only through its chapter's entry (and `topics`).
  */
-export const STATUSES = ['official', 'unverified', 'draft'];
+export const STATUSES = ['official', 'supplementary', 'unverified', 'draft'];
 const TYPES = { C: 'chapter', T: 'topic', S: 'subtopic', M: 'concept' };
 const DEPTH = { chapter: 0, topic: 1, subtopic: 2, concept: 3 };
 const norm = (s) => String(s).toLowerCase().normalize('NFC').replace(/\s+/g, ' ').trim();
@@ -36,7 +40,7 @@ export class TreeSyllabus {
         this.problems.push(`line ${i + 1}: unknown entry`);
         continue;
       }
-      const [slug, titleEn, titleHi, extra] = line.slice(2).split('|').map((s) => s.trim());
+      const [slug, titleEn, titleHi, extra, extra2] = line.slice(2).split('|').map((s) => s.trim());
       const depth = DEPTH[type];
       // Nearest shallower node: a micro-concept may sit directly under a topic.
       let parent = null;
@@ -61,9 +65,12 @@ export class TreeSyllabus {
         topicSlug: depth === 1 ? slug : depth > 1 ? parent.topicSlug : null,
         displayOrder: siblings.length + 1,
         // A figure parent hides its whole branch.
-        hidden: extra === 'fig' || Boolean(parent?.hidden),
+        hidden: (type === 'chapter' ? extra2 === 'fig' : extra === 'fig') || Boolean(parent?.hidden),
         legacyTopicId: type === 'chapter' && extra && extra !== '-' ? extra : null,
-        patterns: [],
+        patterns:
+          type !== 'chapter' && extra && extra !== 'fig'
+            ? extra.split(';').map((p) => p.trim()).filter(Boolean)
+            : (parent?.patterns ?? []),
       };
       this.nodes.set(nodeId, node);
       siblings.push(nodeId);
@@ -122,8 +129,10 @@ export class TreeSyllabus {
     const n = this.getNode(id);
     const e = n && this.entry(examId, n.chapterSlug);
     if (!e) return null;
-    if (n.nodeType === 'chapter') return e.status;
-    return e.verifiedTopics?.includes(n.topicSlug) && n.nodeType === 'topic' ? e.status : 'draft';
+    // verifiedAll: every node is printed verbatim in the official source.
+    if (n.nodeType === 'chapter' || e.verifiedAll) return e.status;
+    if (n.nodeType === 'topic' && e.verifiedTopics?.includes(n.topicSlug)) return 'official';
+    return e.childStatus ?? 'draft';
   }
 
   sources(examId, id) {
@@ -138,8 +147,10 @@ export class TreeSyllabus {
   /** Practice topic used for Library / bank / weak-topic stats. */
   practiceTopic(examId, chapterId) {
     const c = this.getNode(chapterId);
-    const legacy = c.legacyTopicId && topicIndex(examId).get(c.legacyTopicId);
-    return legacy ? { id: c.legacyTopicId, name: legacy.topic.name } : { id: c.nodeId, name: c.titleEn };
+    // The chapter's own flat topic ("<subject>.<chapter>") when it has no legacy id.
+    const legacyId = c.legacyTopicId ?? `${this.subjectId}.${c.slug}`;
+    const legacy = topicIndex(examId).get(legacyId);
+    return legacy ? { id: legacyId, name: legacy.topic.name } : { id: c.nodeId, name: c.titleEn };
   }
 
   publicNode(examId, n, { withCounts = true } = {}) {
@@ -218,8 +229,8 @@ export class TreeSyllabus {
         const c = this.getNode(`${this.prefix}.${slug}`);
         if (!c) problems.push(`${examId}: unknown chapter ${slug}`);
         if (!STATUSES.includes(e.status)) problems.push(`${examId}.${slug}: bad status ${e.status}`);
-        if (e.status === 'official' && !e.sources?.some((s) => s.startsWith('cen_'))) {
-          problems.push(`${examId}.${slug}: official without a CEN source`);
+        if (e.status === 'official' && !e.sources?.some((s) => /^(cen|ssc)_/.test(s))) {
+          problems.push(`${examId}.${slug}: official without an official notification source`);
         }
         for (const t of e.topics ?? []) if (!this.getNode(`${this.prefix}.${slug}.${t}`)) problems.push(`${examId}.${slug}: unknown topic ${t}`);
       }
@@ -228,7 +239,7 @@ export class TreeSyllabus {
   }
 
   counts(examId) {
-    const c = { chapters: 0, topics: 0, subtopics: 0, concepts: 0, status: { official: 0, unverified: 0, draft: 0 } };
+    const c = { chapters: 0, topics: 0, subtopics: 0, concepts: 0, status: { official: 0, supplementary: 0, unverified: 0, draft: 0 } };
     for (const n of this.nodes.values()) {
       if (!this.isApplicable(examId, n.nodeId)) continue;
       c[{ chapter: 'chapters', topic: 'topics', subtopic: 'subtopics', concept: 'concepts' }[n.nodeType]]++;

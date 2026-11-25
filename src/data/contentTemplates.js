@@ -107,6 +107,14 @@ export function templateFor(subjectId, topicId = '') {
   if (subjectId === 'general_science') return TEMPLATES.science;
   if (['professional_it', 'computer', 'technical'].includes(subjectId)) return TEMPLATES.computer;
   if (subjectId === 'quant') return TEMPLATES.maths;
+  // RRB Station Master (CEN 08/2026 sections).
+  if (subjectId === 'sm_science_math') return TEMPLATES.maths;
+  if (subjectId === 'sm_logical') return /reading_comprehension/.test(topicId) ? TEMPLATES.english : TEMPLATES.reasoning;
+  if (subjectId === 'sm_mental') return TEMPLATES.reasoning;
+  // SSC-only subjects.
+  if (subjectId === 'statistics') return TEMPLATES.maths;
+  if (subjectId === 'finance_economics') return TEMPLATES.banking;
+  if (['je_civil', 'je_electrical', 'je_mechanical'].includes(subjectId)) return TEMPLATES.science;
   if (subjectId === 'reasoning') return TEMPLATES.reasoning;
   if (subjectId === 'english') return TEMPLATES.english;
   return TEMPLATES.general;

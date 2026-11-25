@@ -2256,7 +2256,7 @@ test('history outlines: drafts, nested, every section has a checklist, cross-ref
     }
   }
   // Attached wherever the exam has History; never to Banking.
-  assert.deepEqual(examsSharing('general_awareness.history.freedom_struggle').sort(), ['rrb_group_d', 'rrb_je', 'rrb_ntpc', 'rrb_tech_gr1_signal', 'rrb_tech_gr3', 'ssc_cgl', 'ssc_chsl', 'ssc_cpo', 'ssc_gd', 'ssc_mts'].sort());
+  assert.deepEqual(examsSharing('general_awareness.history.freedom_struggle').sort(), ['rrb_group_d', 'rrb_je', 'rrb_ntpc', 'rrb_tech_gr1_signal', 'rrb_tech_gr3', 'ssc_cgl', 'ssc_chsl', 'ssc_cpo', 'ssc_gd', 'ssc_je', 'ssc_mts', 'ssc_sp_grad', 'ssc_sp_hsc', 'ssc_sp_matric', 'ssc_steno'].sort());
   const ibps = buildExamTree('ibps_po', { includeDrafts: true });
   assert.equal(JSON.stringify(ibps).includes('freedom_struggle'), false);
   // Boundary: the Revolt of 1857 is only in Freedom Struggle.
@@ -2309,4 +2309,19 @@ test("syllabus trees: reasoning concept practice is exam-scoped with automatic d
   assert.equal(n.body.topicId, "ga.history.ancient.mauryan.ashoka");
   // Legacy topic-level practice still works.
   assert.equal((await call("POST", "/questions/generate", { examId: "rrb_group_d", topicIds: ["reasoning.analogy"], source: "ai", count: 5 }, token)).status, 201);
+});
+
+test("SSC: concept practice is scoped to the exam's official syllabus; notes use the same ids", async () => {
+  const t = await reg("8000000903");
+  // MTS-only item → MTS practice works, CGL refuses it.
+  const ok = await strict("POST", "/questions/generate", { examId: "ssc_mts", subjectId: "quant", selectedNodeIds: ["sq.geometry.lines_angles"], source: "ai", count: 5 }, t);
+  assert.equal(ok.status, 201);
+  const stored = await db.sessions.findOne({ _id: ok.body.sessionId });
+  assert.equal(stored.difficulty, "easy");
+  assert.ok(stored.questions.every((q) => q.nodeId === "sq.geometry.lines_angles" && q.subjectId === "quant"));
+  const bad = await strict("POST", "/questions/generate", { examId: "ssc_cgl", subjectId: "quant", selectedNodeIds: ["sq.geometry.lines_angles"], source: "ai", count: 5 }, t);
+  assert.equal(bad.status, 400);
+  // JE discipline notes; a node from another discipline is refused.
+  assert.equal((await call("POST", "/notes/generate", { examId: "ssc_je", nodeId: "jc.surveying.levelling", sections: ["explanation"] }, token)).status, 201);
+  assert.equal((await call("POST", "/notes/generate", { examId: "ssc_steno", nodeId: "jc.surveying.levelling", sections: ["explanation"] }, token)).status, 400);
 });

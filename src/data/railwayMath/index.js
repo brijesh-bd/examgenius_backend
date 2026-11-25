@@ -1,4 +1,5 @@
 import { examCatalog } from '../examCatalog.js';
+import { examSubjects } from '../syllabus.js';
 import { HIERARCHY } from './hierarchy.js';
 import { SOURCES, FAILED_SOURCES, RETRIEVED_ON } from './sources.js';
 
@@ -15,7 +16,11 @@ export const ROOT_ID = 'rm';
 
 export const STATUSES = ['official', 'unverified', 'draft'];
 
-export const RAILWAY_EXAMS = examCatalog.find((c) => c.id === 'railway')?.exams ?? [];
+// Railway exams whose syllabus has a Mathematics subject (Station Master's
+// CEN sections are mapped separately in syllabusTrees/stationMaster.js).
+export const RAILWAY_EXAMS = (examCatalog.find((c) => c.id === 'railway')?.exams ?? []).filter((e) =>
+  (examSubjects[e.id] ?? []).some((s) => s.id === 'quant'),
+);
 export const RAILWAY_EXAM_IDS = RAILWAY_EXAMS.map((e) => e.id);
 
 /** Chapters deliberately NOT applicable to an exam (with the reason). */

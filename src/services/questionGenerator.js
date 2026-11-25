@@ -81,6 +81,8 @@ Rules for every question:
 - tip: one practical learning or exam tip.
 - wrongReasons: exactly 4 strings, one per option in order; for each WRONG option say briefly why it is wrong (the common mistake behind it); for the correct option use "".
 - Use ₹ for money and Indian context where natural. No questions that depend on images or diagrams.
+- Data interpretation / statistical charts: give the data inside the question text as a small plain-text table (rows and columns with values) — never refer to a picture.
+- These are original practice questions. Never claim or imply that a question is from a previous year's paper (PYQ).
 - For current affairs topics, stick to stable facts and avoid events whose details may have changed.
 - Never repeat a question; vary the sub-concepts within each topic.
 - topicId must be one of the topic ids given in the request.
@@ -144,7 +146,8 @@ export class GeminiQuestionGenerator {
       language === 'hi'
         ? 'Write the question, options, explanation, steps, concept, tip and wrongReasons in Hindi (Devanagari script). Keep numbers, formulas and proper nouns as usual.'
         : 'Write everything in clear, simple English.';
-    return `Exam: ${exam.name}
+    return `Exam: ${exam.name}${exam.scheme ? `
+Exam pattern (official notice): ${exam.scheme}` : ''}
 Difficulty: ${difficulty} — ${LEVEL_GUIDE[difficulty]}.
 Number of questions: ${count}
 Spread the questions evenly across these syllabus topics:

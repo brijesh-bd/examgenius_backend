@@ -9,9 +9,32 @@ import { mappingDocuments, nodeDocuments } from '../src/services/syllabusStore.j
 
 const RAILWAY = ['rrb_ntpc', 'rrb_group_d', 'rrb_alp', 'rrb_je', 'rrb_tech_gr1_signal', 'rrb_tech_gr3'];
 
-test('all libraries and mappings validate; no node is official without a CEN source', () => {
+test('all libraries and mappings validate; only CEN-verified exams have official nodes', () => {
   assert.deepEqual(validateAll(), []);
-  for (const r of coverageReport()) for (const s of r.subjects) assert.equal(s.status.official, 0, `${r.examId}/${s.subjectId}`);
+  for (const r of coverageReport()) {
+    for (const s of r.subjects) {
+      if (r.examId === 'rrb_station_master') assert.equal(s.status.unverified + s.status.draft, 0, s.subjectId);
+      else if (r.examId.startsWith('ssc_')) assert.equal(s.status.unverified + s.status.draft, 0, `${r.examId}/${s.subjectId}: SSC is official or supplementary`);
+      else assert.equal(s.status.official, 0, `${r.examId}/${s.subjectId}`);
+    }
+  }
+});
+
+test('Station Master follows CEN 08/2026 sections exactly', () => {
+  assert.deepEqual(getSyllabus('rrb_station_master').subjects.map((s) => s.id), ['sm_science_math', 'sm_logical', 'sm_mental']);
+  const sci = syllabusFor('rrb_station_master', 'sm_science_math');
+  for (const id of ['smb.basic_science_math.mathematics.arithmetic_progression', 'smb.basic_science_math.mathematics.probability', 'smb.data_analysis.data_sufficiency']) {
+    assert.equal(sci.status('rrb_station_master', id), 'official', id);
+    assert.deepEqual(sci.sources('rrb_station_master', id), ['cen_08_2026']);
+  }
+  const log = syllabusFor('rrb_station_master', 'sm_logical');
+  assert.ok(log.getNode('sml.logical_reasoning.binary_logic'));
+  assert.ok(log.getNode('sml.reading_comprehension.main_idea'));
+  assert.deepEqual(syllabusFor('rrb_station_master', 'sm_mental').chapters('rrb_station_master').map((c) => c.slug), ['analogy', 'series_completion', 'coding_decoding', 'ranking_arrangement']);
+  // Shared Railway libraries are not mapped to Station Master.
+  for (const s of ['quant', 'reasoning', 'general_awareness', 'general_science']) assert.equal(syllabusFor('rrb_station_master', s), null, s);
+  // Station Master nodes never appear for other exams.
+  assert.equal(syllabusFor('rrb_ntpc', 'sm_mental'), null);
 });
 
 test('each exam shows only its applicable subjects', () => {
@@ -86,8 +109,9 @@ test('stable ids; database documents are unique and deterministic', () => {
   assert.deepEqual(nodeDocuments().map((d) => d.contentHash), docs.map((d) => d.contentHash));
   const maps = mappingDocuments();
   assert.equal(new Set(maps.map((m) => m._id)).size, maps.length);
-  assert.ok(maps.every((m) => m.classification === 'additional_practice' && m.notificationReference === null));
-  assert.equal(SYLLABI.length, 4);
+  assert.ok(maps.every((m) => (m.status === 'official') === (m.classification === 'official')));
+  assert.ok(maps.filter((m) => m.status === 'official').every((m) => m.examId === 'rrb_station_master' || m.examId.startsWith('ssc_')));
+  assert.equal(SYLLABI.length, 16);
 });
 
 // ── HTTP ─────────────────────────────────────────────────────────────────────
@@ -128,4 +152,12 @@ test('GET tree / children / search for any subject; statuses visible; old math p
   assert.equal((await get('/syllabus/rrb_je/reasoning/search?q=coding')).body.results[0].nodeId, 'rr.coding_decoding');
   assert.equal((await get('/syllabus/railway/rrb_je/math/tree')).status, 200);
   assert.equal((await get('/syllabus/rrb_je/quant/tree')).status, 200);
+});
+
+test('GET Station Master tree carries official status', async () => {
+  const t = await get('/syllabus/rrb_station_master/sm_mental/tree');
+  assert.equal(t.status, 200);
+  assert.equal(t.body.hasOfficial, true);
+  assert.ok(t.body.nodes.every((n) => n.status === 'official'));
+  assert.equal((await get('/syllabus/rrb_station_master/sm_logical/nodes/sml.logical_reasoning/children')).status, 200);
 });

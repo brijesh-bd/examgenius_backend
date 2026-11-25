@@ -129,7 +129,7 @@ export function mappingDocuments() {
           classification: s.status(examId, n.nodeId) === 'official' ? 'official' : 'additional_practice',
           status: s.status(examId, n.nodeId),
           sourceReferences: s.sources(examId, n.nodeId),
-          notificationReference: null,
+          notificationReference: (n.chapterSlug && s.entry?.(examId, n.chapterSlug)?.ref) ?? null,
           difficulty: s.difficulty(examId),
           isActive: true,
         });
