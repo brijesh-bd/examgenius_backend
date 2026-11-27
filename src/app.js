@@ -13,18 +13,21 @@ import { toPublicUser } from './services/userStore.js';
 import { toPublicSet } from './services/libraryStore.js';
 import { toPublicResult, toPublicSaved, toPublicSession } from './services/practiceStore.js';
 import { AiServiceError, GenerationError } from './services/questionGenerator.js';
-import { NOTE_LEVELS, NOTE_SECTIONS, validateNoteContent } from './services/notesGenerator.js';
+import { NOTE_COVERAGES, NOTE_LEVELS, NOTE_SECTIONS, validateNoteContent } from './services/notesGenerator.js';
 import { toPublicNote } from './services/notesStore.js';
 import { SectionCache, STUDENT_STATUSES, PREVIEW_STATUSES } from './services/sectionCache.js';
 import { SYLLABUS_VERSION } from './data/syllabus.js';
 import { LEARNING_MODES, SECTION_PROMPT_VERSION, SECTION_SCHEMA_VERSION } from './services/sectionGenerator.js';
-import { findOutline, outlineSections } from './data/outlines/index.js';
+import { findOutline, hasAnyOutline, outlineSections } from './data/outlines/index.js';
+import { syllabusScope } from './services/outlineGenerator.js';
+import { TopicSummaryStore } from './services/topicSummary.js';
+import { registerNotesStream } from './services/notesStream.js';
 import { buildExamTree, walkTree } from './services/syllabusTree.js';
 import { findManifest, manifestReport } from './data/manifests/index.js';
 import { MODE_GUIDE, blocksFor, templateFor } from './data/contentTemplates.js';
 import { LimitError } from './services/subscription.js';
 import { examCatalog } from './data/examCatalog.js';
-import { SSC_SCHEMES, examTreeSubjects, syllabusFor, syllabusOfNode } from './data/syllabusTrees/index.js';
+import { BANK_SCHEMES, SSC_SCHEMES, bankExamPattern, examTreeSubjects, syllabusFor, syllabusOfNode } from './data/syllabusTrees/index.js';
 
 /** Bump when a syllabus tree changes in a way clients should refetch. */
 const SYLLABUS_TREES_VERSION = 2;
@@ -75,6 +78,11 @@ export function createApp({
   notesQuota,
   sectionGenerator,
   sectionJobs,
+  aiOutlines = null,
+  outlineGenerator = null,
+  topicSummaries = null,
+  notesCache = null,
+  summaryGenerator = null,
   logRequests = false,
 }) {
   const app = express();
@@ -181,6 +189,13 @@ export function createApp({
 
   // ── Exams & syllabus ──────────────────────────────────────────────────────
   api.get('/exams', (_req, res) => res.json({ categories: listCategories() }));
+
+  // Paper-wise hierarchy: stage → section (official figures) → subject → chapters.
+  api.get('/exams/:examId/pattern', (req, res) => {
+    const pattern = bankExamPattern(req.params.examId);
+    if (!pattern) throw httpError(404, 'No exam pattern for this exam', 'NO_PATTERN');
+    res.json(pattern);
+  });
 
   api.get('/exams/:examId/syllabus', (req, res) => {
     const syllabus = getSyllabus(req.params.examId);
@@ -581,7 +596,7 @@ export function createApp({
       } else {
         const generated = await questionGenerator.generate({
           // Paper/tier pattern from the official notice, when known (SSC).
-          exam: SSC_SCHEMES[exam.id] ? { ...exam, scheme: SSC_SCHEMES[exam.id] } : exam,
+          exam: (SSC_SCHEMES[exam.id] ?? BANK_SCHEMES[exam.id]) ? { ...exam, scheme: SSC_SCHEMES[exam.id] ?? BANK_SCHEMES[exam.id] } : exam,
           topics,
           difficulty: difficulty,
           count: body.count,
@@ -867,9 +882,28 @@ export function createApp({
     nodeId: z.string().max(120).optional(),
     language: z.enum(['en', 'hi']).default('en'),
     level: z.enum(NOTE_LEVELS).default('exam'),
-    sections: z.array(z.enum(NOTE_SECTIONS)).min(1).max(NOTE_SECTIONS.length),
+    // 'complete' (redesigned Study Notes): all sections, whole syllabus sub-tree.
+    coverage: z.enum(NOTE_COVERAGES).default('standard'),
+    sections: z.array(z.enum(NOTE_SECTIONS)).min(1).max(NOTE_SECTIONS.length).optional(),
     requestKey: z.string().trim().min(8).max(100).optional(),
-  });
+  }).transform((b) => ({ ...b, sections: b.coverage === 'complete' || !b.sections ? [...NOTE_SECTIONS] : b.sections }));
+
+  /**
+   * One AI generation per student × requestKey at a time: a retry that
+   * arrives while the first call is still running (e.g. the app timed out)
+   * waits for the same result instead of starting a second AI request.
+   */
+  const inflightNotes = new Map();
+  function generateOnce(userId, requestKey, fn) {
+    if (!requestKey) return fn();
+    const key = `${userId}:${requestKey}`;
+    let pending = inflightNotes.get(key);
+    if (!pending) {
+      pending = fn().finally(() => inflightNotes.delete(key));
+      inflightNotes.set(key, pending);
+    }
+    return pending;
+  }
 
   // Generates notes with Gemini, validates them and saves them automatically.
   // 201 only after the note is stored in MongoDB.
@@ -892,7 +926,7 @@ export function createApp({
     const subject = found.subject;
     const isUnit = item.unitName !== null;
     const topic = { id: item.id, name: isUnit ? `${item.topicName}: ${item.unitName}` : item.name };
-    const { content, model } = await notesGenerator.generate({
+    const { content, model } = await generateOnce(req.user._id, body.requestKey, () => notesGenerator.generate({
       exam,
       subject,
       topic,
@@ -905,12 +939,15 @@ export function createApp({
       language: body.language,
       level: body.level,
       sections,
-    });
+      coverage: body.coverage,
+      subjectGuide: templateFor(subject.id, item.id).guide,
+      scope: isUnit ? `${item.topicName} › ${item.unitName}` : item.name,
+    }));
     // Never store unchecked AI output. "What to study next" always comes from
     // the syllabus path (real topic ids), never from the AI.
-    const checked = validateNoteContent(content, sections);
+    const checked = validateNoteContent(content, sections, { coverage: body.coverage });
     checked.nextTopics = found.next.map((n) => ({ id: n.id, name: n.unitName ? `${n.topicName}: ${n.unitName}` : n.name }));
-    const { note } = await notes.create({
+    const { note, created } = await notes.create({
       userId: req.user._id,
       requestKey: body.requestKey ?? null,
       exam,
@@ -923,8 +960,10 @@ export function createApp({
       sections,
       content: checked,
       model,
+      extra: { coverage: body.coverage },
     });
-    await notesQuota.record(req.user._id, { topicId: item.id });
+    // A retry that joined the same generation finds the note already saved: count once.
+    if (created) await notesQuota.record(req.user._id, { topicId: item.id });
     res.status(201).json(toPublicNote(note));
   });
 
@@ -932,6 +971,91 @@ export function createApp({
    * Notes for one syllabus-tree node of any subject (concept, or a parent for
    * an overview). Same node ids as practice; nothing is kept in a second tree.
    */
+  /** The selected node's syllabus sub-tree as indented lines (the AI's scope). */
+  function subtreeText(tree, examId, nodeId, maxLines = 120) {
+    const lines = [];
+    const walk = (id, depth) => {
+      if (lines.length >= maxLines) return;
+      const n = tree.getNode(id);
+      lines.push(`${'  '.repeat(depth)}- ${n.titleEn}`);
+      for (const c of tree.childIds(examId, id)) walk(c, depth + 1);
+    };
+    walk(nodeId, 0);
+    return lines.join('\n');
+  }
+
+  /**
+   * A notes target (syllabus node of any subject, or a flat topic/unit) →
+   * everything generation, saving and the cache key need. Throws 400 for an
+   * id that is not in this exam's syllabus (before any AI call).
+   */
+  function resolveNotesTarget(exam, body) {
+    const language = body.language;
+    if (body.nodeId) {
+      const tree = syllabusOfNode(body.nodeId, exam.id);
+      if (!tree || !tree.hasExam(exam.id) || !tree.isApplicable(exam.id, body.nodeId)) {
+        throw httpError(400, `${body.nodeId} is not in the ${exam.name} syllabus`, 'INVALID_NODES');
+      }
+      const path = tree.pathOf(body.nodeId);
+      const node = path.at(-1);
+      const chapter = path[0];
+      const title = (n) => (language === 'hi' ? n.titleHi : n.titleEn);
+      const subjectName = getSyllabus(exam.id)?.subjects.find((s) => s.id === tree.subjectId)?.name ?? tree.subjectId;
+      const leaves = tree.leafIds(exam.id, node.nodeId);
+      const siblings = tree.childIds(exam.id, node.parentId);
+      const at = siblings.indexOf(node.nodeId);
+      return {
+        targetId: node.nodeId,
+        syllabusVersion: SYLLABUS_TREES_VERSION,
+        subject: { id: tree.subjectId, name: subjectName },
+        topic: { id: node.nodeId, name: path.map(title).join(' › ') },
+        parentTopic: path.length > 1 ? { id: chapter.nodeId, name: title(chapter) } : null,
+        unitName: null,
+        concept: {
+          path: path.map((p) => p.titleEn).join(' › '),
+          patterns: [...new Set(leaves.flatMap((id) => tree.getNode(id).patterns ?? []))].slice(0, 12),
+          covers: leaves.length > 1 ? leaves.slice(0, 20).map((id) => tree.getNode(id).titleEn) : [],
+        },
+        scope: subtreeText(tree, exam.id, node.nodeId),
+        subjectGuide: templateFor(tree.subjectId, node.nodeId).guide,
+        nextTopics: siblings.slice(at + 1, at + 4).map((id) => ({ id, name: title(tree.getNode(id)) })),
+        extra: { syllabusNodeId: node.nodeId, syllabusId: tree.syllabusId, syllabusPath: path.map((p) => p.nodeId), syllabusVersion: SYLLABUS_TREES_VERSION },
+      };
+    }
+    if (!body.topicId) throw httpError(400, 'Select a topic');
+    const found = findLearningItem(exam.id, body.topicId);
+    if (!found) throw httpError(400, `Topic ${body.topicId} is not in the ${exam.name} syllabus`);
+    const { item, subject } = found;
+    const isUnit = item.unitName !== null;
+    const name = isUnit ? `${item.topicName}: ${item.unitName}` : item.name;
+    return {
+      targetId: item.id,
+      syllabusVersion: SYLLABUS_VERSION,
+      subject,
+      topic: { id: item.id, name },
+      parentTopic: isUnit ? { id: item.topicId, name: item.topicName } : null,
+      unitName: isUnit ? item.unitName : null,
+      concept: null,
+      scope: isUnit ? `${item.topicName} › ${item.unitName}` : item.name,
+      subjectGuide: templateFor(subject.id, item.id).guide,
+      nextTopics: found.next.map((n) => ({ id: n.id, name: n.unitName ? `${n.topicName}: ${n.unitName}` : n.name })),
+      extra: {},
+    };
+  }
+
+  registerNotesStream(api, {
+    requireAuth,
+    findExam,
+    resolveNotesTarget,
+    parseBody: (b) => NotesBody.parse({ ...b, coverage: 'complete' }),
+    notes,
+    notesQuota,
+    notesGenerator,
+    notesCache,
+    toPublicNote,
+    aiErrorInfo,
+  });
+
   async function conceptNotes(req, res, exam, body) {
     const tree = syllabusOfNode(body.nodeId, exam.id);
     if (!tree || !tree.hasExam(exam.id) || !tree.isApplicable(exam.id, body.nodeId)) {
@@ -950,7 +1074,7 @@ export function createApp({
     const title = (n) => (body.language === 'hi' ? n.titleHi : n.titleEn);
     const topic = { id: node.nodeId, name: path.map(title).join(' › ') };
     const leaves = tree.leafIds(exam.id, node.nodeId);
-    const { content, model } = await notesGenerator.generate({
+    const { content, model } = await generateOnce(req.user._id, body.requestKey, () => notesGenerator.generate({
       exam,
       subject,
       topic,
@@ -962,14 +1086,17 @@ export function createApp({
       language: body.language,
       level: body.level,
       sections,
-    });
-    const checked = validateNoteContent(content, sections);
+      coverage: body.coverage,
+      subjectGuide: templateFor(tree.subjectId, node.nodeId).guide,
+      scope: subtreeText(tree, exam.id, node.nodeId),
+    }));
+    const checked = validateNoteContent(content, sections, { coverage: body.coverage });
     // Next: the following sibling nodes in syllabus order (real node ids).
     const siblings = tree.childIds(exam.id, node.parentId);
     checked.nextTopics = siblings
       .slice(siblings.indexOf(node.nodeId) + 1, siblings.indexOf(node.nodeId) + 4)
       .map((id) => ({ id, name: title(tree.getNode(id)) }));
-    const { note } = await notes.create({
+    const { note, created } = await notes.create({
       userId: req.user._id,
       requestKey: body.requestKey ?? null,
       exam,
@@ -982,11 +1109,62 @@ export function createApp({
       sections,
       content: checked,
       model,
-      extra: { syllabusNodeId: node.nodeId, syllabusId: tree.syllabusId, syllabusPath: path.map((p) => p.nodeId), syllabusVersion: SYLLABUS_TREES_VERSION },
+      extra: { syllabusNodeId: node.nodeId, syllabusId: tree.syllabusId, syllabusPath: path.map((p) => p.nodeId), syllabusVersion: SYLLABUS_TREES_VERSION, coverage: body.coverage },
     });
-    await notesQuota.record(req.user._id, { topicId: node.nodeId });
+    if (created) await notesQuota.record(req.user._id, { topicId: node.nodeId });
     res.status(201).json(toPublicNote(note));
   }
+
+  // ── Topic Summary: what a selected topic covers, before full notes ───────
+  // Shared per exam × topic × language; only a missing summary calls the AI.
+  const summaryLimiter = rateLimit({
+    windowMs: 60 * 60_000,
+    limit: Math.max(config.ai.generationsPerHour ?? 30, 30),
+    keyGenerator: (req) => req.user._id,
+    message: { error: 'Too many topic summaries this hour. Please try again later.', code: 'AI_HOURLY_LIMIT' },
+  });
+  const SummaryBody = z.object({
+    examId: z.string().max(60),
+    nodeId: z.string().max(120).optional(),
+    topicId: z.string().max(120).optional(),
+    language: z.enum(['en', 'hi']).default('en'),
+  });
+
+  api.post('/notes/topic-summary', requireAuth, summaryLimiter, async (req, res) => {
+    const body = SummaryBody.parse(req.body);
+    const exam = findExam(body.examId);
+    if (!exam) throw httpError(404, 'Unknown exam');
+    let target;
+    if (body.nodeId) {
+      const tree = syllabusOfNode(body.nodeId, exam.id);
+      if (!tree?.hasExam(exam.id) || !tree.isApplicable(exam.id, body.nodeId)) {
+        throw httpError(400, `${body.nodeId} is not in the ${exam.name} syllabus`, 'INVALID_NODES');
+      }
+      const path = tree.pathOf(body.nodeId);
+      const subjectName = getSyllabus(exam.id)?.subjects.find((s) => s.id === tree.subjectId)?.name ?? tree.subjectId;
+      target = {
+        id: body.nodeId,
+        subject: { id: tree.subjectId, name: subjectName },
+        path: path.map((p) => p.titleEn).join(' › '),
+        scope: subtreeText(tree, exam.id, body.nodeId, 60),
+      };
+    } else if (body.topicId) {
+      const found = findLearningItem(exam.id, body.topicId);
+      if (!found) throw httpError(400, `Topic ${body.topicId} is not in the ${exam.name} syllabus`);
+      const name = found.item.unitName ? `${found.item.topicName} › ${found.item.unitName}` : found.item.name;
+      target = { id: found.item.id, subject: found.subject, path: name, scope: `- ${name}` };
+    } else {
+      throw httpError(400, 'Select a topic');
+    }
+    if (!topicSummaries || !summaryGenerator) throw httpError(503, 'Topic summaries are not available', 'NO_SUMMARY');
+
+    const key = TopicSummaryStore.key({ examId: exam.id, id: target.id, language: body.language });
+    const cached = await topicSummaries.get(key);
+    if (cached) return res.json({ id: target.id, source: 'cache', summary: cached.summary });
+    const { summary, model } = await summaryGenerator.generate({ exam, subject: target.subject, path: target.path, scope: target.scope, language: body.language });
+    const doc = await topicSummaries.put(key, { examId: exam.id, nodeId: target.id, language: body.language, summary, model });
+    res.json({ id: target.id, source: 'ai', summary: doc.summary });
+  });
 
   const NotesQuery = z.object({
     category: Category,
@@ -1158,7 +1336,11 @@ export function createApp({
     const found = findLearningItem(exam.id, unitId);
     if (!found || found.item.id !== unitId) throw httpError(404, 'Topic not found in this exam');
     const outline = findOutline(unitId, { includeDrafts: draftsFor(req) });
-    if (!outline) throw httpError(404, 'No outline for this topic yet', 'NO_OUTLINE');
+    if (!outline) {
+      // An AI index exists but is not approved yet: say so (students cannot open it).
+      if (hasAnyOutline(unitId)) throw httpError(404, 'The chapter index for this topic is waiting for review', 'OUTLINE_PENDING_REVIEW');
+      throw httpError(404, 'No outline for this topic yet', 'NO_OUTLINE');
+    }
     return { exam, found, outline, preview: draftsFor(req) };
   }
 
@@ -1249,9 +1431,78 @@ export function createApp({
       generated: chapters.reduce((n, c) => n + c.generated, 0),
       // Never claimed as complete unless every outline section is completed.
       coverageComplete: completed === total,
+      // Chapter Builder: LEARNING_COMPLETED only when every part is completed.
+      completionStatus: completed === total ? 'LEARNING_COMPLETED' : completed > 0 ? 'IN_PROGRESS' : 'NOT_STARTED',
       continue: next,
+      overview: outline.overview ?? null,
+      objectives: outline.objectives ?? [],
+      revisionPlan: outline.revisionPlan ?? [],
+      source: outline.source === 'ai' ? 'ai_reviewed' : 'curated',
     };
   }
+
+  // ── Chapter Builder, Phase 1: AI chapter index for a topic without one ────
+  // The index is saved as a DRAFT; students see it only after an admin approves.
+  api.post('/notes/outlines/:examId/:unitId/index', requireAuth, async (req, res) => {
+    const body = z.object({ stage: z.enum(['prelims', 'mains', 'descriptive', 'single']).optional() }).parse(req.body ?? {});
+    const exam = findExam(req.params.examId);
+    if (!exam) throw httpError(404, 'Unknown exam');
+    const unitId = req.params.unitId;
+    const found = findLearningItem(exam.id, unitId);
+    if (!found || found.item.id !== unitId) throw httpError(404, 'Topic not found in this exam');
+    if (!aiOutlines || !outlineGenerator) throw httpError(503, 'Chapter Builder is not available', 'NO_CHAPTER_BUILDER');
+
+    const existing = findOutline(unitId, { includeDrafts: true });
+    if (existing) {
+      return res.json({ unitId, status: existing.status === 'approved' ? 'approved' : 'pending_review', source: existing.source === 'ai' ? 'ai' : 'curated' });
+    }
+    await notesQuota.check(req.user._id);
+    const scope = syllabusScope(exam.id, found.subject.id, found.item.topicId, { stage: body.stage ?? null });
+    const generated = await outlineGenerator.generate({ exam, subject: found.subject, item: found.item, stage: body.stage ?? null, scope });
+    const { doc, created } = await aiOutlines.saveDraft(unitId, {
+      outline: generated.outline,
+      warnings: generated.warnings,
+      model: generated.model ?? null,
+      examId: exam.id,
+      stage: body.stage ?? null,
+      createdBy: req.user._id,
+    });
+    if (created) await notesQuota.record(req.user._id, { unitId, kind2: 'chapter_index' });
+    const parts = doc.outline.chapters.reduce((n, c) => n + c.sections.length, 0);
+    res.status(created ? 201 : 200).json({
+      unitId,
+      status: doc.status === 'approved' ? 'approved' : 'pending_review',
+      source: 'ai',
+      totalParts: parts,
+      ...(isAdmin(req.user) ? { outline: doc.outline, validationWarnings: doc.validationWarnings } : {}),
+    });
+  });
+
+  // Admin review queue for AI chapter indexes.
+  api.get('/admin/outlines', requireAuth, async (req, res) => {
+    if (!isAdmin(req.user)) throw httpError(403, 'Admins only', 'ADMIN_ONLY');
+    if (!aiOutlines) throw httpError(503, 'Chapter Builder is not available', 'NO_CHAPTER_BUILDER');
+    const status = z.enum(['draft', 'approved', 'rejected']).default('draft').parse(req.query.status);
+    res.json({ items: await aiOutlines.list({ status }) });
+  });
+
+  api.post('/admin/outlines/:unitId/review', requireAuth, async (req, res) => {
+    if (!isAdmin(req.user)) throw httpError(403, 'Admins only', 'ADMIN_ONLY');
+    if (!aiOutlines) throw httpError(503, 'Chapter Builder is not available', 'NO_CHAPTER_BUILDER');
+    const body = z.object({
+      action: z.enum(['approve', 'reject']),
+      comment: z.string().max(1000).optional(),
+      outline: z.object({ chapters: z.array(z.any()).min(1) }).passthrough().optional(),
+    }).parse(req.body);
+    let doc;
+    try {
+      doc = await aiOutlines.review(req.params.unitId, { ...body, reviewer: req.user._id });
+    } catch (err) {
+      throw httpError(400, `Invalid outline: ${err.message}`, 'BAD_OUTLINE');
+    }
+    if (!doc) throw httpError(404, 'No AI index for this topic');
+    res.json({ unitId: doc._id, status: doc.status, version: doc.version });
+  });
 
   api.get('/notes/outlines/:examId/:unitId', requireAuth, async (req, res) => {
     const { language, mode } = z.object(LangMode).parse(req.query);
@@ -1715,27 +1966,55 @@ export function createApp({
         },
       });
     }
-    if (err instanceof GenerationError) {
-      return res.status(502).json({ error: err.message });
-    }
-    if (err instanceof AiServiceError && err.quotaExhausted) {
-      // Gemini quota used up: nothing was saved and nothing was counted.
-      return res.status(503).json({
-        error: 'The AI service has reached its usage limit. Please try again later.',
-        code: 'AI_QUOTA_EXHAUSTED',
-        details: { retryAfterSeconds: err.retryAfterSeconds ?? null },
-      });
-    }
-    if (err instanceof AiServiceError) {
-      return res.status(503).json({
-        error: err.retryable ? 'AI is busy right now. Please try again shortly.' : err.message,
-      });
-    }
+    // AI failures: specific code + message; nothing was saved or counted.
+    const ai = aiErrorInfo(err);
+    if (ai) return res.status(ai.status).json(ai.body);
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });
   });
 
   return app;
+}
+
+/**
+ * Why an AI call failed, for JSON responses and streamed (SSE) errors alike.
+ * null when the error is not an AI error.
+ */
+export function aiErrorInfo(err) {
+  if (err instanceof GenerationError) {
+    const code = err.interrupted
+      ? 'AI_INTERRUPTED'
+      : /cut off/i.test(err.message)
+        ? 'AI_TRUNCATED'
+        : /declined/i.test(err.message)
+          ? 'AI_DECLINED'
+          : 'AI_INCOMPLETE';
+    return { status: 502, body: { error: err.message, code } };
+  }
+  if (err instanceof AiServiceError && err.quotaExhausted) {
+    return {
+      status: 503,
+      body: {
+        error: 'The AI service has reached its usage limit. Please try again later.',
+        code: 'AI_QUOTA_EXHAUSTED',
+        details: { retryAfterSeconds: err.retryAfterSeconds ?? null },
+      },
+    };
+  }
+  if (err instanceof AiServiceError) {
+    const msg = String(err.message ?? '');
+    const [code, error] = !err.retryable
+      ? ['AI_NOT_CONFIGURED', msg]
+      : /timed out/i.test(msg)
+        ? ['AI_TIMEOUT', 'The AI took too long to answer. Please try again.']
+        : /\b(503|UNAVAILABLE|overload|high demand)\b/i.test(msg)
+          ? ['AI_OVERLOADED', 'The AI model is overloaded right now (high demand at Google). Please try again in a minute.']
+          : /network/i.test(msg)
+            ? ['AI_NETWORK', 'The server could not reach the AI service. Please try again.']
+            : ['AI_BUSY', 'AI is busy right now. Please try again shortly.'];
+    return { status: 503, body: { error, code } };
+  }
+  return null;
 }
 
 function httpError(status, message, code) {

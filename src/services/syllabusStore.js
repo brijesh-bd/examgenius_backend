@@ -10,7 +10,7 @@ const VERSION = 2;
  * serves the in-memory data; these collections make it queryable/joinable.
  *
  *   syllabus_nodes        one doc per library node, _id "<syllabusId>:<nodeId>"
- *   syllabus_exam_nodes   one doc per exam × node: status, sources, difficulty
+ *   syllabus_exam_nodes   one doc per exam × node: status, sources, difficulty, stages
  *   syllabus_node_history previous version of a node whenever its content changes
  *   syllabus_sync_log     one entry per sync run
  *
@@ -131,6 +131,8 @@ export function mappingDocuments() {
           sourceReferences: s.sources(examId, n.nodeId),
           notificationReference: (n.chapterSlug && s.entry?.(examId, n.chapterSlug)?.ref) ?? null,
           difficulty: s.difficulty(examId),
+          // Exam stages (banking: prelims / mains / descriptive / single); [] = not staged.
+          stages: (n.chapterSlug && s.entry?.(examId, n.chapterSlug)?.stages) ?? [],
           isActive: true,
         });
       }

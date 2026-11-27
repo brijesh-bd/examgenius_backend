@@ -101,6 +101,8 @@ exam-style examples step by step from easy to hard, and list common traps.`,
 /** Subject id (syllabus) → template family. Topic id refines mixed subjects. */
 export function templateFor(subjectId, topicId = '') {
   if (subjectId === 'banking_awareness') return TEMPLATES.banking;
+  // Science inside GA / science-and-tech nodes (e.g. ga.general_science.physics.work).
+  if (/general_science|physics|chemistry|biology/.test(topicId)) return TEMPLATES.science;
   if (subjectId === 'general_awareness') {
     return /\.(economy|banking)/.test(topicId) ? TEMPLATES.banking : TEMPLATES.history_gk;
   }
@@ -116,7 +118,8 @@ export function templateFor(subjectId, topicId = '') {
   if (subjectId === 'finance_economics') return TEMPLATES.banking;
   if (['je_civil', 'je_electrical', 'je_mechanical'].includes(subjectId)) return TEMPLATES.science;
   if (subjectId === 'reasoning') return TEMPLATES.reasoning;
-  if (subjectId === 'english') return TEMPLATES.english;
+  // Hindi language (banking RRB): grammar/vocabulary practice like English.
+  if (subjectId === 'english' || subjectId === 'hindi') return TEMPLATES.english;
   return TEMPLATES.general;
 }
 

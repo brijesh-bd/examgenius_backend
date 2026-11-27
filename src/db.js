@@ -36,6 +36,12 @@ export async function connectDb({ uri, db: dbName }) {
     // Generation lease + last outcome per shared section (services/sectionJobs.js).
     sectionJobs: db.collection('section_jobs'),
     aiGenerationLog: db.collection('ai_generation_log'),
+    // AI-built chapter indexes awaiting / after admin review (services/aiOutlineStore.js).
+    aiOutlines: db.collection('ai_outlines'),
+    // Shared topic summaries (services/topicSummary.js), _id = exam:topic:language:version.
+    topicSummaries: db.collection('topic_summaries'),
+    // Shared complete notes (services/notesCache.js), _id = notes cache key.
+    notesCache: db.collection('notes_cache'),
   };
 
   await Promise.all([
@@ -77,6 +83,8 @@ export async function connectDb({ uri, db: dbName }) {
     collections.studyNotes.createIndex({ userId: 1, category: 1, createdAt: -1 }),
     collections.studyNotes.createIndex({ userId: 1, examId: 1, topicId: 1, createdAt: -1 }),
     collections.learningProgress.createIndex({ userId: 1, examId: 1, itemId: 1 }, { unique: true }),
+    collections.aiOutlines.createIndex({ status: 1, createdAt: -1 }),
+    collections.studyNotes.createIndex({ userId: 1, cacheKey: 1, createdAt: -1 }, { partialFilterExpression: { cacheKey: { $type: 'string' } } }),
     collections.learningProgress.createIndex({ userId: 1, examId: 1, subjectId: 1 }),
     collections.sectionCache.createIndex({ key: 1, rev: -1 }, { unique: true }),
     collections.sectionCache.createIndex({ unitId: 1, status: 1 }),

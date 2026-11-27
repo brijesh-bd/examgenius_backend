@@ -229,7 +229,7 @@ export class TreeSyllabus {
         const c = this.getNode(`${this.prefix}.${slug}`);
         if (!c) problems.push(`${examId}: unknown chapter ${slug}`);
         if (!STATUSES.includes(e.status)) problems.push(`${examId}.${slug}: bad status ${e.status}`);
-        if (e.status === 'official' && !e.sources?.some((s) => /^(cen|ssc)_/.test(s))) {
+        if (e.status === 'official' && !e.sources?.some((s) => /^(cen|ssc|ibps|sbi)_/.test(s))) {
           problems.push(`${examId}.${slug}: official without an official notification source`);
         }
         for (const t of e.topics ?? []) if (!this.getNode(`${this.prefix}.${slug}.${t}`)) problems.push(`${examId}.${slug}: unknown topic ${t}`);

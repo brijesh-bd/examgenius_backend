@@ -1,5 +1,6 @@
 import { AiServiceError, GenerationError } from './questionGenerator.js';
-import { GeminiJsonClient, isLiteModel } from './geminiClient.js';
+import { GeminiJsonClient, isLiteModel, streamJson } from './geminiClient.js';
+import { parsePartialJson } from './partialJson.js';
 
 /**
  * AI Study Notes. A generator takes
@@ -39,11 +40,38 @@ export const NOTE_SECTIONS = [
 ];
 export const NOTE_LEVELS = ['basic', 'exam', 'advanced'];
 
+/**
+ * 'complete' = the redesigned AI Study Notes: no difficulty or section
+ * choice; every section, the whole selected syllabus sub-tree, subject-aware
+ * structure, bigger output budget and stricter completeness checks.
+ * 'standard' = the old per-level/per-section request (kept for old builds).
+ */
+export const NOTE_COVERAGES = ['standard', 'complete'];
+
+/** Size caps and completeness floor per coverage. */
+export const COVERAGE_LIMITS = {
+  standard: { explanation: 10, concepts: 20, examples: 6, formulas: 20, tables: 5, mcqs: 10, keyPoints: 20, minExplanation: 0, minMcqs: 0 },
+  complete: { explanation: 18, concepts: 30, examples: 12, formulas: 30, tables: 8, mcqs: 15, keyPoints: 30, minExplanation: 4, minMcqs: 5 },
+};
+
 const LEVEL_GUIDE = {
   basic: 'Beginner: simple words, build from zero, more examples, no assumed knowledge',
   exam: 'Exam standard: exactly what this exam asks, with shortcuts and typical question patterns',
   advanced: 'Advanced: deeper reasoning, tricky cases and higher-difficulty applications',
 };
+
+/** Complete coverage: the guide for each part of the chapter-style notes. */
+const COMPLETE_GUIDE = `Write COMPLETE, chapter-style study material for serious government-exam preparation. Cover EVERY subtopic listed in the syllabus scope; never stop at a short definition.
+Use the parts that fit this subject (they are guidelines, not mandatory headings; leave a list empty when it does not apply):
+- overview: topic introduction (what it is, why it matters in this exam).
+- explanation: 6-16 sub-sections {heading, body} giving the complete concept explanation: fundamental principles, types and classifications, every relevant subtopic, laws and rules, practical applications. Each body is a full explanation (several paragraphs where needed), not one line.
+- concepts: all important definitions (term, precise definition).
+- formulas: every formula with the meaning and SI unit of each symbol, and short derivations where useful (ONLY when the subject has formulas). tables: comparisons, classifications, units and dimensions, formula/definition summary.
+- examples: 4-10 worked examples / solved numerical problems with numbered steps and the final answer (numericals for maths and physics; solving approaches and patterns for reasoning; applied cases for other subjects).
+- keyPoints: important facts and exam-oriented concepts, including concepts commonly tested in previous exams of this pattern (describe the pattern; never quote or invent a specific past question, year or paper).
+- mistakes: common mistakes and misconceptions. tips: shortcuts and exam tricks.
+- mcqs: 8-12 important questions with answers (4 options, correctIndex, explanation).
+- quickRevision: 10-20 one-line revision notes, ending with a formula and definition summary where relevant.`;
 
 const SECTION_GUIDE = {
   explanation: 'explanation: 3-6 sub-sections ({heading, body}) that explain the concept fully, step by step',
@@ -59,6 +87,44 @@ const SECTION_GUIDE = {
   revision: 'quickRevision: 6-12 one-line revision bullets',
   mcqs: 'mcqs: 5 exam-style MCQs, 4 options each, correctIndex 0-3, a short explanation',
 };
+
+/**
+ * Part of the shared notes-cache key: bump when the complete-notes prompt,
+ * schema or quality rules change, so older cached notes are not reused.
+ *   v2 — static system prefix (rules + guide + subject guide), dynamic
+ *        request part only in the user message; streamed generation.
+ */
+export const NOTES_PROMPT_VERSION = 2;
+
+/**
+ * Complete notes: everything that is the same for every request of a
+ * subject goes into the system instruction (a stable prefix Gemini can
+ * reuse from its implicit cache); only the request goes in the user part.
+ */
+export function completeSystemPrompt(subjectGuide = '') {
+  return `You are an expert teacher and author of study material for Indian government recruitment exams (RRB, SSC, IBPS, SBI). Write accurate, syllabus-focused study notes as JSON matching the schema.
+Rules: facts, formulas and numbers must be correct; never invent data. Plain text only (no markdown symbols). Leave a list empty when it would not help (no decorative diagrams, graphs or code).
+
+${COMPLETE_GUIDE}
+
+SUBJECT GUIDE:
+${subjectGuide}`;
+}
+
+/** Complete notes: the per-request part (exam, topic, syllabus sub-tree, language). */
+export function completeUserPrompt({ exam, subject, topic, concept = null, language, scope = '' }) {
+  return `Exam: ${exam.name}
+Subject: ${subject.name}
+Topic: ${topic.name}${concept ? `
+Syllabus path: ${concept.path}` : ''}
+
+SYLLABUS SCOPE (cover all of it and nothing outside it):
+${scope || topic.name}${concept?.patterns?.length ? `
+Question patterns asked on this topic: ${concept.patterns.join('; ')}` : ''}
+
+Also give nextTopics (3-5 related topics to study next).
+${language === 'hi' ? 'Write all text in Hindi (Devanagari script). Keep numbers, formulas, code and proper nouns as usual; add the English technical term in brackets where students need it, e.g. कार्य (Work).' : 'Write all text in clear, simple English.'}`;
+}
 
 export const SYSTEM_PROMPT = `You are an expert teacher and author of study material for Indian government recruitment exams (RRB, SSC, IBPS, SBI).
 Write accurate, syllabus-focused study notes as JSON matching the schema.
@@ -104,12 +170,42 @@ export const RESPONSE_SCHEMA = obj({
   nextTopics: strList,
 });
 
-export function buildNotesPrompt({ exam, subject, topic, unitOf = null, concept = null, language, level, sections }) {
+export function buildNotesPrompt({
+  exam,
+  subject,
+  topic,
+  unitOf = null,
+  concept = null,
+  language,
+  level,
+  sections,
+  coverage = 'standard',
+  subjectGuide = '',
+  scope = '',
+}) {
   const wanted = sections.map((s) => `- ${SECTION_GUIDE[s]}`).join('\n');
   const lang =
     language === 'hi'
-      ? 'Write all text in Hindi (Devanagari script). Keep numbers, formulas, code and proper nouns as usual.'
+      ? 'Write all text in Hindi (Devanagari script). Keep numbers, formulas, code and proper nouns as usual; add the English technical term in brackets where students need it, e.g. कार्य (Work).'
       : 'Write all text in clear, simple English.';
+  if (coverage === 'complete') {
+    return `Exam: ${exam.name}
+Subject: ${subject.name}
+Topic: ${topic.name}${concept ? `
+Syllabus path: ${concept.path}` : ''}
+
+SYLLABUS SCOPE (from the exam's syllabus tree; cover all of it and nothing outside it):
+${scope || topic.name}${concept?.patterns?.length ? `
+Question patterns asked on this topic: ${concept.patterns.join('; ')}` : ''}
+
+${subjectGuide}
+
+${COMPLETE_GUIDE}
+
+Also give nextTopics (3-5 related topics to study next).
+
+${lang}`;
+  }
   return `Exam: ${exam.name}
 Subject: ${subject.name}
 Topic: ${topic.name}${unitOf ? `
@@ -134,6 +230,10 @@ export class UnavailableNotesGenerator {
   async generate() {
     throw new AiServiceError('AI Study Notes are not available: the server has no AI key configured.', false);
   }
+
+  async generateStream() {
+    return this.generate();
+  }
 }
 
 export class GeminiNotesGenerator {
@@ -143,24 +243,76 @@ export class GeminiNotesGenerator {
     // Notes are long; give each model more time than a question set.
     this.client = new GeminiJsonClient({
       apiKey: geminiApiKey,
-      timeoutMs: Math.max(timeoutMs, 90_000),
+      // Complete notes can take a few minutes on a busy model.
+      timeoutMs: Math.max(timeoutMs, 180_000),
       fetchImpl,
       log,
     });
   }
 
   async generate(request) {
+    const complete = request.coverage === 'complete';
     const { json, model } = await this.client.generate({
       models: this.models,
-      label: 'notes',
-      systemPrompt: SYSTEM_PROMPT,
-      prompt: buildNotesPrompt(request),
+      label: complete ? 'notes-complete' : 'notes',
+      systemPrompt: complete ? completeSystemPrompt(request.subjectGuide) : SYSTEM_PROMPT,
+      prompt: complete ? completeUserPrompt(request) : buildNotesPrompt(request),
       schema: RESPONSE_SCHEMA,
-      maxOutputTokens: 32_768,
-      validate: (raw) => validateNoteContent(raw, request.sections),
+      // Flash models allow 65,536 output tokens; complete notes need the room.
+      // A cut-off response (MAX_TOKENS) is rejected, never saved as complete.
+      maxOutputTokens: complete ? 65_536 : 32_768,
+      validate: (raw) => validateNoteContent(raw, request.sections, { coverage: request.coverage }),
     });
     return { content: json, model };
   }
+
+  /**
+   * Complete notes, streamed: `onPartial(previewContent)` is called (at most
+   * every `partialEveryMs`) with everything readable so far. Resolves only
+   * with the full, validated content. Fallback to the next model happens
+   * only before any output; never a second paid generation mid-stream.
+   */
+  async generateStream(request, { onPartial = () => {}, partialEveryMs = 400 } = {}) {
+    let lastSent = 0;
+    let lastLength = 0;
+    const result = await streamJson(this.client, {
+      models: this.models,
+      label: 'notes-stream',
+      systemPrompt: completeSystemPrompt(request.subjectGuide),
+      prompt: completeUserPrompt(request),
+      schema: RESPONSE_SCHEMA,
+      maxOutputTokens: 65_536,
+      validate: (raw) => validateNoteContent(raw, NOTE_SECTIONS, { coverage: 'complete' }),
+      onText: (text) => {
+        const now = Date.now();
+        if (now - lastSent < partialEveryMs || text.length === lastLength) return;
+        const preview = previewNoteContent(parsePartialJson(text));
+        if (!preview) return;
+        lastSent = now;
+        lastLength = text.length;
+        onPartial(preview);
+      },
+    });
+    return { content: result.json, model: result.model, usage: result.usage, ttfbMs: result.ttfbMs, aiMs: result.aiMs };
+  }
+}
+
+/**
+ * What can be shown of a partial answer: well-formed items only (validation
+ * without the completeness floor). null when nothing is readable yet.
+ */
+export function previewNoteContent(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  try {
+    return validateNoteContent(raw, NOTE_SECTIONS);
+  } catch {
+    const overview = typeof raw.overview === 'string' ? raw.overview.trim() : '';
+    return overview ? { ...validateEmpty(), overview } : null;
+  }
+}
+
+function validateEmpty() {
+  return Object.fromEntries(Object.keys(RESPONSE_SCHEMA.properties).map((k) => [k, k === 'overview' ? '' : []]));
 }
 
 // ── Validation ──────────────────────────────────────────────────────────────
@@ -175,12 +327,13 @@ const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
  * items, removes sections that were not requested). Throws GenerationError
  * when nothing usable is left, so nothing broken is ever saved.
  */
-export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
+export function validateNoteContent(raw, sections = NOTE_SECTIONS, { coverage = 'standard' } = {}) {
+  const cap = COVERAGE_LIMITS[coverage] ?? COVERAGE_LIMITS.standard;
   const on = new Set(sections);
   const want = (key, value) => (on.has(key) ? value : []);
   const r = raw && typeof raw === 'object' ? raw : {};
 
-  const examples = list(r.examples, 6)
+  const examples = list(r.examples, cap.examples)
     .map((e) => ({
       title: clean(e?.title, 200),
       problem: clean(e?.problem, 1500),
@@ -202,7 +355,7 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
     }))
     .filter((g) => g.points.length >= 2);
 
-  const tables = list(r.tables, 5)
+  const tables = list(r.tables, cap.tables)
     .map((t) => {
       const headers = strings(t?.headers, 6, 80);
       const rows = list(t?.rows, 20)
@@ -212,7 +365,7 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
     })
     .filter((t) => t.headers.length >= 2 && t.rows.length >= 1);
 
-  const mcqs = list(r.mcqs, 10)
+  const mcqs = list(r.mcqs, cap.mcqs)
     .map((q) => ({
       question: clean(q?.question, 800),
       options: strings(q?.options, 4, 300),
@@ -232,13 +385,13 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
     overview: clean(r.overview, 3000),
     explanation: want(
       'explanation',
-      list(r.explanation, 10)
-        .map((s) => ({ heading: clean(s?.heading, 200), body: clean(s?.body, 4000) }))
+      list(r.explanation, cap.explanation)
+        .map((s) => ({ heading: clean(s?.heading, 200), body: clean(s?.body, coverage === 'complete' ? 8000 : 4000) }))
         .filter((s) => s.body),
     ),
     concepts: want(
       'definitions',
-      list(r.concepts, 20)
+      list(r.concepts, cap.concepts)
         .map((c) => ({ term: clean(c?.term, 200), definition: clean(c?.definition, 1000) }))
         .filter((c) => c.term && c.definition),
     ),
@@ -252,7 +405,7 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
     graphs: want('graphs', graphs),
     formulas: want(
       'formulas',
-      list(r.formulas, 20)
+      list(r.formulas, cap.formulas)
         .map((f) => ({ name: clean(f?.name, 200), expression: clean(f?.expression, 400), meaning: clean(f?.meaning, 600) }))
         .filter((f) => f.expression),
     ),
@@ -262,7 +415,7 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
       .filter((c) => c.code),
     tips: want('tips', strings(r.tips)),
     mistakes: want('mistakes', strings(r.mistakes)),
-    keyPoints: want('keyPoints', strings(r.keyPoints)),
+    keyPoints: want('keyPoints', strings(r.keyPoints, cap.keyPoints)),
     quickRevision: want('revision', strings(r.quickRevision, 20, 300)),
     mcqs: want('mcqs', mcqs),
     nextTopics: strings(r.nextTopics, 6, 120),
@@ -273,6 +426,10 @@ export function validateNoteContent(raw, sections = NOTE_SECTIONS) {
   );
   if (!content.overview || !hasBody) {
     throw new GenerationError('The AI notes were incomplete. Please try again.');
+  }
+  // Complete notes: never accept (or label as complete) a thin answer.
+  if (content.explanation.length < cap.minExplanation || content.mcqs.length < cap.minMcqs) {
+    throw new GenerationError('The AI notes did not cover the whole topic. Nothing was saved; please try again.');
   }
   return content;
 }

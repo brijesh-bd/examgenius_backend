@@ -12,7 +12,8 @@
     "notes-cache": "node scripts/notes-cache.js",
     "railway-math": "node scripts/sync-railway-math.js",
     "syllabus": "node scripts/sync-syllabus.js",
-    "gemini-live": "node scripts/gemini-live-check.js"
+    "gemini-live": "node scripts/gemini-live-check.js",
+    "banking-coverage": "node scripts/banking-coverage-report.js"
   },
   "type": "module",
   "dependencies": {

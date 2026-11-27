@@ -9,6 +9,9 @@ import { ENGLISH } from './english.js';
 import { SSC_COMPUTER, SSC_FINANCE_ECONOMICS, SSC_QUANT, SSC_REASONING, SSC_STATISTICS } from './sscLibraries.js';
 import { JE_CIVIL, JE_ELECTRICAL, JE_MECHANICAL } from './sscJe.js';
 import { SSC_EXAM_SYLLABUS, SSC_SCHEMES, SSC_SOURCES } from './sscExams.js';
+import { BANK_AWARENESS, BANK_COMPUTER, BANK_ENGLISH_CHAPTERS, BANK_HINDI, BANK_QUANT, BANK_REASONING } from './bankLibraries.js';
+import { PROFESSIONAL_IT } from './professionalIt.js';
+import { BANK_EXAM_SYLLABUS, BANK_PATTERNS, BANK_SCHEMES, BANK_SOURCES, examPattern } from './bankExams.js';
 
 /**
  * Registry of hierarchical syllabi: (examId, subjectId) → tree.
@@ -21,7 +24,8 @@ import { SSC_EXAM_SYLLABUS, SSC_SCHEMES, SSC_SOURCES } from './sscExams.js';
 /** Railway and SSC mappings are kept apart; a library is mapped only from the sets given. */
 const RAILWAY = EXAM_SYLLABUS;
 const SSC = SSC_EXAM_SYLLABUS;
-const ALL_EXAMS = { ...RAILWAY, ...SSC };
+const BANK = BANK_EXAM_SYLLABUS;
+const ALL_EXAMS = { ...RAILWAY, ...SSC, ...BANK };
 const mappingFor = (subjectId, sets) =>
   Object.fromEntries(
     sets.flatMap((set) =>
@@ -120,7 +124,7 @@ export const SYLLABI = [
   make('railway_reasoning', 'rr', 'reasoning', REASONING),
   // Shared library; Railway and SSC exams each keep their own mapping.
   // (syllabusId kept from v1 so database ids stay stable.)
-  make('railway_general_awareness', 'ga', 'general_awareness', GENERAL_AWARENESS, [RAILWAY, SSC]),
+  make('railway_general_awareness', 'ga', 'general_awareness', GENERAL_AWARENESS, [RAILWAY, SSC, BANK]),
   make('railway_general_science', 'gs', 'general_science', GENERAL_SCIENCE),
   // Station Master (CEN 08/2026): the CEN's own sections, verbatim.
   make('station_master_science_math', 'smb', 'sm_science_math', SM_SCIENCE_MATH),
@@ -129,16 +133,37 @@ export const SYLLABI = [
   // SSC (official SSC notices; see sscExams.js).
   make('ssc_quant', 'sq', 'quant', SSC_QUANT, [SSC]),
   make('ssc_reasoning', 'sr', 'reasoning', SSC_REASONING, [SSC]),
-  make('english', 'en', 'english', ENGLISH, [SSC]),
+  // Banking formats + descriptive appended; mapped only for banking exams.
+  make('english', 'en', 'english', ENGLISH + BANK_ENGLISH_CHAPTERS, [SSC, BANK]),
   make('ssc_computer', 'ck', 'computer', SSC_COMPUTER, [SSC]),
   make('ssc_statistics', 'st', 'statistics', SSC_STATISTICS, [SSC]),
   make('ssc_finance_economics', 'fe', 'finance_economics', SSC_FINANCE_ECONOMICS, [SSC]),
   make('ssc_je_civil', 'jc', 'je_civil', JE_CIVIL, [SSC]),
   make('ssc_je_electrical', 'jl', 'je_electrical', JE_ELECTRICAL, [SSC]),
   make('ssc_je_mechanical', 'jm', 'je_mechanical', JE_MECHANICAL, [SSC]),
+  // Banking (IBPS / SBI; see bankExams.js). One library per subject, mapped per exam and stage.
+  make('bank_quant', 'bq', 'quant', BANK_QUANT, [BANK]),
+  make('bank_reasoning', 'br', 'reasoning', BANK_REASONING, [BANK]),
+  make('bank_hindi', 'hl', 'hindi', BANK_HINDI, [BANK]),
+  make('bank_awareness', 'ba', 'banking_awareness', BANK_AWARENESS, [BANK]),
+  make('bank_computer', 'bc', 'computer', BANK_COMPUTER, [BANK]),
+  make('professional_it', 'pk', 'professional_it', PROFESSIONAL_IT, [BANK]),
 ];
 
 export { SUBJECT_NAMES, TREE_SOURCES, EXAM_SYLLABUS, SSC_EXAM_SYLLABUS, SSC_SOURCES, SSC_SCHEMES };
+export { BANK_EXAM_SYLLABUS, BANK_PATTERNS, BANK_SCHEMES, BANK_SOURCES };
+
+/** Paper-wise hierarchy (stage → section → subject → chapters) of a banking exam. */
+export function bankExamPattern(examId) {
+  return examPattern(examId, (e, subjectId, slugs) => {
+    const tree = syllabusFor(e, subjectId);
+    if (!tree) return [];
+    return slugs
+      .map((slug) => tree.getNode(`${tree.prefix}.${slug}`))
+      .filter(Boolean)
+      .map((n) => ({ ...tree.publicNode(e, n), stages: tree.entry(e, n.slug)?.stages ?? [] }));
+  });
+}
 
 /** The tree of one exam's subject, or null when it has none. */
 export function syllabusFor(examId, subjectId) {

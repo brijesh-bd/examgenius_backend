@@ -74,6 +74,22 @@ const BLOCK_PROMPT = {
   practice: 'practice (exercise question → answer with reason)',
 };
 
+/**
+ * Plan of a Chapter Builder part (AI index): its level, concepts and what it
+ * must include. Empty for curated sections (they carry no plan), so their
+ * prompt and the shared cache stay unchanged.
+ */
+function partPlan(section) {
+  if (!section.concepts?.length) return '';
+  return `
+THIS PART'S PLAN (from the approved chapter index):
+Level: ${section.level ?? 'intermediate'}
+Concepts to cover (all of them, nothing beyond them): ${section.concepts.join('; ')}
+Include where they fit the subject: ${(section.includes ?? []).join('; ') || 'explanation, examples, important points'}
+End with quick revision and a short knowledge check (exam-style MCQs). Check every formula and calculation; mark any uncertain or source-dependent fact with "Verify:".
+`;
+}
+
 export function buildSectionPrompt({ exam, subject, unitName, outline, chapter, section, language, mode, manifest = null }) {
   const template = templateFor(subject.id, outline.unitId ?? '');
   const blocks = blocksFor(template, mode);
@@ -98,7 +114,7 @@ Write ONLY the marked section, completely. Do not repeat material that belongs t
 Mode: ${MODE_GUIDE[mode]}
 
 ${template.guide}
-${manifest ? `\nSYLLABUS COVERAGE FOR THIS SECTION:\n${manifestPrompt(manifest, mode)}\nList in "coveredConcepts" the names of the concepts you covered.\n` : ''}
+${partPlan(section)}${manifest ? `\nSYLLABUS COVERAGE FOR THIS SECTION:\n${manifestPrompt(manifest, mode)}\nList in "coveredConcepts" the names of the concepts you covered.\n` : ''}
 Fill always: overview. Fill these blocks: ${blocks.map((b) => BLOCK_PROMPT[b]).join('; ')}.
 Leave every other array empty (do not force blocks that do not fit this subject).
 

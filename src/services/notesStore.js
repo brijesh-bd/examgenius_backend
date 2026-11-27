@@ -20,6 +20,12 @@ export class NotesStore {
     return this.notes.findOne({ userId, requestKey });
   }
 
+  /** This student's latest note for the same notes-cache key (topic × language × versions). */
+  findByCacheKey(userId, cacheKey) {
+    if (!cacheKey) return null;
+    return this.notes.findOne({ userId, cacheKey }, { sort: { createdAt: -1 } });
+  }
+
   find(userId, id) {
     return this.notes.findOne({ _id: id, userId });
   }

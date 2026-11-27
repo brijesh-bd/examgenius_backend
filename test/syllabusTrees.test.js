@@ -111,7 +111,7 @@ test('stable ids; database documents are unique and deterministic', () => {
   assert.equal(new Set(maps.map((m) => m._id)).size, maps.length);
   assert.ok(maps.every((m) => (m.status === 'official') === (m.classification === 'official')));
   assert.ok(maps.filter((m) => m.status === 'official').every((m) => m.examId === 'rrb_station_master' || m.examId.startsWith('ssc_')));
-  assert.equal(SYLLABI.length, 16);
+  assert.equal(SYLLABI.length, 22);
 });
 
 // ── HTTP ─────────────────────────────────────────────────────────────────────

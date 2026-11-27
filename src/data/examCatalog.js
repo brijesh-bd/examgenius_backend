@@ -38,6 +38,7 @@ export const examCatalog = [
       {'id': 'ibps_rrb_po', 'name': 'IBPS RRB PO', 'categoryId': 'banking'},
       {'id': 'ibps_rrb_clerk', 'name': 'IBPS RRB Clerk', 'categoryId': 'banking'},
       {'id': 'ibps_so_it', 'name': 'IBPS SO IT Officer', 'categoryId': 'banking'},
+      {'id': 'ibps_rrb_so_it', 'name': 'IBPS RRB Officer Scale-II (IT)', 'categoryId': 'banking'},
       {'id': 'sbi_po', 'name': 'SBI PO', 'categoryId': 'banking'},
       {'id': 'sbi_clerk', 'name': 'SBI Clerk', 'categoryId': 'banking'},
     ],

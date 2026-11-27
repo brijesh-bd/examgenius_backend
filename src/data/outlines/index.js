@@ -97,6 +97,23 @@ export function normalizeOutline(outline) {
 
 export const OUTLINES = RAW_OUTLINES.map(normalizeOutline);
 
+/**
+ * AI-built chapter indexes (Chapter Builder, stored in MongoDB ai_outlines).
+ * Loaded at startup and after every review action. They follow the same
+ * rules as curated outlines: 'draft' until an admin approves, so students
+ * never see an unreviewed index. A curated outline always wins.
+ */
+let aiOutlines = [];
+export function setAiOutlines(list) {
+  aiOutlines = list.map(normalizeOutline);
+}
+const allOutlines = () => [...OUTLINES, ...aiOutlines];
+
+/** True when any outline (curated or AI, any status) covers this unit. */
+export function hasAnyOutline(unitId) {
+  return allOutlines().some((o) => o.unitId === unitId || o.chapters.some((c) => c.topicId === unitId));
+}
+
 const visible = (node) => node.status !== 'draft';
 
 /** Removes draft chapters/subtopics/sections (for students). */
@@ -123,7 +140,7 @@ function withoutDraftNodes(outline) {
  * includeDrafts: admin preview only.
  */
 export function findOutline(unitId, { includeDrafts = false } = {}) {
-  for (const outline of OUTLINES) {
+  for (const outline of allOutlines()) {
     if (outline.status !== 'approved' && !includeDrafts) continue;
     let found = null;
     if (outline.unitId === unitId) found = outline;

@@ -1,6 +1,7 @@
 // Mirrors the Flutter app's syllabus (lib/features/question_generator/data).
 import { JE_CIVIL, JE_ELECTRICAL, JE_MECHANICAL } from './syllabusTrees/sscJe.js';
 import { SSC_FINANCE_ECONOMICS, SSC_STATISTICS } from './syllabusTrees/sscLibraries.js';
+import { BANK_HINDI } from './syllabusTrees/bankLibraries.js';
 
 /**
  * Bump when topics or units change (ids must stay stable: practice, the
@@ -212,7 +213,15 @@ const _jeMechanical = _fromLibrary('je_mechanical', 'General Engineering (Mechan
 const _statistics = _fromLibrary('statistics', 'Statistics (Paper-II, JSO)', SSC_STATISTICS);
 const _financeEconomics = _fromLibrary('finance_economics', 'General Studies — Finance & Economics (Paper-III, AAO)', SSC_FINANCE_ECONOMICS);
 const _sscBasic = [_reasoningGeneral, _generalAwareness, _quantBasic, _english];
-const _bankStandard = [_reasoningBanking, _quantBanking, _english, _bankingAwareness, _computer];
+const _hindi = _fromLibrary('hindi', 'Hindi Language', BANK_HINDI);
+// Banking subjects follow each notification's sections (syllabusTrees/bankExams.js).
+// Banking GA: no History (not named by any IBPS/SBI notice; product rule).
+const _bankGeneralAwareness = _subject(
+  'general_awareness',
+  'General Awareness',
+  Object.fromEntries(_generalAwareness.topics.map((t) => [t.id.split('.').pop(), t.name]).filter(([id]) => !['history', 'art_culture'].includes(id))),
+);
+const _bankCore = [_reasoningBanking, _quantBanking, _english, _bankGeneralAwareness, _bankingAwareness];
 
 export const examSubjects = {
   // Railway subject lists follow the exam-wise coverage (syllabus-drafts/coverage.md):
@@ -250,13 +259,14 @@ export const examSubjects = {
   'ssc_sp_matric': [_reasoningGeneral, _generalAwareness, _quantBasic, _english],
   'ssc_sp_hsc': [_reasoningGeneral, _generalAwareness, _quantSsc, _english],
   'ssc_sp_grad': [_reasoningGeneral, _generalAwareness, _quantSsc, _english],
-  'ibps_po': _bankStandard,
-  'ibps_clerk': _bankStandard,
-  'ibps_rrb_po': _bankStandard,
-  'ibps_rrb_clerk': _bankStandard,
-  'sbi_po': _bankStandard,
-  'sbi_clerk': _bankStandard,
+  'ibps_po': [..._bankCore, _computer],
+  'ibps_clerk': _bankCore, // CSA-XV: no Computer section
+  'ibps_rrb_po': [..._bankCore, _hindi, _computer],
+  'ibps_rrb_clerk': [..._bankCore, _hindi, _computer],
+  'sbi_po': [..._bankCore, _computer],
+  'sbi_clerk': [..._bankCore, _computer],
   'ibps_so_it': [_reasoningBanking, _english, _quantBanking, _professionalIt],
+  'ibps_rrb_so_it': [_professionalIt, _reasoningBanking, _quantBanking, _english, _hindi, _bankGeneralAwareness, _bankingAwareness, _computer],
 };
 
 // ── Learning units ──────────────────────────────────────────────────────────

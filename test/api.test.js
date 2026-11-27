@@ -1359,7 +1359,34 @@ test('section cache: invalidation stops serving; new revision created', async ()
   assert.ok(await db.sectionCache.findOne({ _id: r2._id }), 'kept, not deleted');
 });
 
-test('gemini client: quota exhausted (429) is logged, never retried, no model switch', async () => {
+test('gemini client: per-MODEL quota exhausted → next model (no retry); project-wide quota → stop', async () => {
+  const perModel = {
+    error: {
+      status: 'RESOURCE_EXHAUSTED',
+      message: 'You exceeded your current quota',
+      details: [{
+        '@type': 'type.googleapis.com/google.rpc.QuotaFailure',
+        violations: [{ quotaMetric: 'generativelanguage.googleapis.com/generate_content_free_tier_requests', quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', quotaValue: '20', quotaDimensions: { model: 'primary', location: 'global' } }],
+      }],
+    },
+  };
+  const g = fakeGemini([[429, perModel], okResp({ ok: 1 })]);
+  const logs = [];
+  const log = { warn: (m) => logs.push(m), error: (m) => logs.push(m) };
+  const c = new GeminiJsonClient({ apiKey: 'k', timeoutMs: 1000, fetchImpl: g.fetchImpl, log, sleep: async () => {} });
+  const r = await c.generate({ models: ['primary', 'backup'], label: 't', systemPrompt: '', prompt: '', schema: {} });
+  assert.deepEqual(g.seen, ['primary', 'backup'], 'exhausted model not retried; backup used');
+  assert.equal(r.model, 'backup');
+  assert.ok(logs.some((m) => m.includes('trying the next model')));
+  // Last model also out of quota → the quota error (nothing left to try).
+  const g2 = fakeGemini([[429, perModel], [429, perModel]]);
+  const c2 = new GeminiJsonClient({ apiKey: 'k', timeoutMs: 1000, fetchImpl: g2.fetchImpl, log, sleep: async () => {} });
+  const err = await c2.generate({ models: ['primary', 'backup'], label: 't', systemPrompt: '', prompt: '', schema: {} }).catch((e) => e);
+  assert.ok(err instanceof AiServiceError && err.quotaExhausted);
+  assert.deepEqual(g2.seen, ['primary', 'backup']);
+});
+
+test('gemini client: project-wide quota exhausted (429) is logged, never retried, no model switch', async () => {
   const quota = [429, {
     error: {
       status: 'RESOURCE_EXHAUSTED',
@@ -1367,7 +1394,7 @@ test('gemini client: quota exhausted (429) is logged, never retried, no model sw
       details: [
         {
           '@type': 'type.googleapis.com/google.rpc.QuotaFailure',
-          violations: [{ quotaMetric: 'generativelanguage.googleapis.com/generate_content_free_tier_requests', quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', quotaValue: '250' }],
+          violations: [{ quotaMetric: 'generativelanguage.googleapis.com/generate_content_free_tier_requests', quotaId: 'GenerateRequestsPerDayPerProject-FreeTier', quotaValue: '250' }],
         },
         { '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '72364s' },
       ],
@@ -1386,7 +1413,7 @@ test('gemini client: quota exhausted (429) is logged, never retried, no model sw
     assert.equal(err.retryAfterSeconds, Number.parseFloat(delay));
     assert.equal(err.quota.model, 'primary');
     assert.equal(err.quota.geminiStatus, 'RESOURCE_EXHAUSTED');
-    assert.equal(err.quota.violations[0].id, 'GenerateRequestsPerDayPerProjectPerModel-FreeTier');
+    assert.equal(err.quota.violations[0].id, 'GenerateRequestsPerDayPerProject-FreeTier');
     assert.ok(logs.some((m) => m.includes('quota exhausted') && m.includes('generate_content_free_tier_requests')));
   }
 });
@@ -1476,7 +1503,7 @@ test('tree: shared subjects/topics across exams, exam-specific structure', async
   // The same topic node is shared, with its exam mapping.
   const pct = rrb.children.find((t) => t.id === 'quant.percentage');
   assert.ok(pct.exams.includes('rrb_ntpc') && pct.exams.includes('ssc_cgl'));
-  assert.deepEqual(examsSharing('professional_it.dbms.sql'), ['ibps_so_it']);
+  assert.deepEqual(examsSharing('professional_it.dbms.sql'), ['ibps_so_it', 'ibps_rrb_so_it']);
 });
 
 test('recursive outlines: nested subtopics flatten to leaf sections; bad structure rejected', async () => {

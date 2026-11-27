@@ -14,6 +14,10 @@ import { SectionJobs } from './services/sectionJobs.js';
 import { NotesQuota } from './services/notesQuota.js';
 import { createSectionGenerator } from './services/sectionGenerator.js';
 import { createNotesGenerator } from './services/notesGenerator.js';
+import { AiOutlineStore } from './services/aiOutlineStore.js';
+import { createOutlineGenerator } from './services/outlineGenerator.js';
+import { TopicSummaryStore, createSummaryGenerator } from './services/topicSummary.js';
+import { NotesCache } from './services/notesCache.js';
 
 let db;
 try {
@@ -23,6 +27,10 @@ try {
   console.error('Start MongoDB (Windows: services.msc → "MongoDB Server" → Start) and try again.');
   process.exit(1);
 }
+
+// AI chapter indexes (draft/approved) join the outline registry before serving.
+const aiOutlines = new AiOutlineStore(db);
+await aiOutlines.refresh();
 
 const app = createApp({
   config,
@@ -39,6 +47,11 @@ const app = createApp({
   notesQuota: new NotesQuota(db, { perHour: config.ai.notesPerHour }),
   sectionGenerator: createSectionGenerator(config.ai),
   notesGenerator: createNotesGenerator(config.ai),
+  aiOutlines,
+  outlineGenerator: createOutlineGenerator(config.ai),
+  topicSummaries: new TopicSummaryStore(db),
+  notesCache: new NotesCache(db),
+  summaryGenerator: createSummaryGenerator(config.ai),
   logRequests: true,
 });
 
